@@ -54,7 +54,7 @@
 | ランキング保存 | Durable Objects（SQLite付き） | データベースIDを設定ファイルに書く必要がなく、`deploy` だけで作られる。初心者がつまずきにくい |
 | ゲーム状態の保存 | ブラウザの localStorage | 通信不要で即保存。オフラインでも続きから遊べる |
 | テスト | Node.js（ロジック・API）＋Playwright（実ブラウザ操作） | 18〜80歳まで実際にボタンを押して最後まで遊び切るテストを、PCとiPhone画面の両方で自動実行 |
-| 公開 | GitHub Actions → Cloudflare | main に push するとテストが通った時だけ自動で公開される |
+| 公開 | Cloudflare の Git 連携（Workers Builds）＋ GitHub Actions のテスト | push するだけで公開され、APIトークンの管理が要らない |
 
 AIやランキングにつながらない時も、代わりの文章が出るのでゲームは止まりません。
 
@@ -91,14 +91,12 @@ npm run deploy
 
 `https://geinin-life.<あなたのサブドメイン>.workers.dev` というURLが表示されます。iPhoneのSafariでこのURLを開けば遊べます（共有ボタン →「ホーム画面に追加」でアプリ風に）。
 
-**GitHubに push したら自動公開する場合**
+**GitHubに push したら自動公開する場合（おすすめ）**
 
-1. Cloudflareのダッシュボード →「My Profile」→「API Tokens」→「Create Token」→ テンプレート「Edit Cloudflare Workers」で作成。Workers AIを使うので権限に「Workers AI: Read」も追加
-2. Cloudflareダッシュボードの右側に出ている「Account ID」をコピー
-3. GitHubのリポジトリ →「Settings」→「Secrets and variables」→「Actions」に次の2つを登録
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-4. 以後、main に push するとテスト → 公開が自動で走ります
+1. Cloudflareのダッシュボード →「Workers & Pages」→「Create」→「Import a repository」
+2. GitHubをつないで `geinin-life` を選ぶ
+3. 設定はそのまま（Deploy command が `npx wrangler deploy`）で「Deploy」
+4. 以後、main に push するたびに Cloudflare が自動で公開します。GitHub側では同時に自動テストが走ります
 
 ### 4. テストを動かす
 

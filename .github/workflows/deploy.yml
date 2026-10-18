@@ -1,5 +1,5 @@
-# main に push すると「テスト → Cloudflare へデプロイ」を自動で実行
-name: test-and-deploy
+# push のたびに自動テストを実行（公開は Cloudflare の Git 連携が自動で行う）
+name: test
 
 on:
   push:
@@ -31,16 +31,3 @@ jobs:
         with:
           name: screenshots
           path: test-results/
-
-  deploy:
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cloudflare Workers にデプロイ
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
