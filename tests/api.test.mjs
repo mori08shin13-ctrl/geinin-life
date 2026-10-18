@@ -28,4 +28,5 @@ assert.equal(r.status, 503, 'AIがない環境では503（フロントが代替�
 
 r = await handleApi(new Request('https://x/api/nope'), env); assert.equal(r.status, 404);
 assert.equal(cleanText('<b>**「やるやん」**</b>'), 'やるやん');
+assert.equal(cleanText('森-san、お疲れ'), '森さん、お疲れ');
 console.log('api tests: all passed');

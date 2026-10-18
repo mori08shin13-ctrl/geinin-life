@@ -4,12 +4,15 @@
 
 // 日本語が比較的得意なモデルを優先し、失敗したら別モデルで再試行
 export const MODELS = ['@cf/google/gemma-3-12b-it', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'];
+// 弔辞は長文なので、日本語の文章力が高い大きいモデルを先に使う
+export const MODELS_LONG = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/google/gemma-3-12b-it'];
 
 const SYSTEM = `あなたは大阪の劇場で長年司会をしている、ベテランの関西弁ツッコミ芸人です。
 ルール:
 - 必ず関西弁で、短く、明るく、愛のあるツッコミをする。
 - 実在の人物の発言をでっち上げない。実在の人物を悪く言わない。
 - 下品・差別的・暴力的な表現は使わない。
+- 自然な日本語だけで書く。英語・ローマ字・「-san」のような表記を混ぜない。人名には「さん」を付ける。
 - 前置き、記号、絵文字、引用符は付けない。本文だけを出力する。`;
 
 const clip = (v, n) => String(v ?? '').replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
@@ -18,10 +21,10 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
 });
 
-export async function runAI(env, user, maxTokens) {
+export async function runAI(env, user, maxTokens, models = MODELS) {
   if (!env.AI) throw new Error('AI binding missing');
   let lastErr;
-  for (const model of MODELS) {
+  for (const model of models) {
     try {
       const out = await env.AI.run(model, {
         messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],
@@ -39,6 +42,7 @@ export function cleanText(t) {
   return String(t)
     .replace(/<\/?[^>]+>/g, '')
     .replace(/\*\*/g, '')
+    .replace(/[-‐]san\b/gi, 'さん')
     .replace(/^["「『\s]+|["」』\s]+$/g, '')
     .trim()
     .slice(0, 600);
@@ -60,7 +64,7 @@ async function eulogy(req, env) {
   const prompt = `80歳で亡くなった架空のお笑い芸人「${clip(b.name, 20)}」（${clip(b.unit, 20)}／${clip(b.unitType, 10)}）への弔辞を書いてください。
 経歴: 18歳でNSC大阪校入学、最終ランク「${clip(b.tier, 12)}」、生涯年収 約${Math.round(Number(b.lifetime) || 0)}万円、賞レース優勝: ${awards || 'なし'}、家族: ${family}、テレビ・映画出演 ${Number(b.tvCount) || 0}作品${b.army ? `、${clip(b.army, 20)}（${Number(b.armyCount) || 0}人）の団長` : ''}。
 笑いと涙が両方ある関西弁の弔辞を、4〜5文・220文字以内で。最後はボケで締めてください。`;
-  const text = await runAI(env, prompt, 420);
+  const text = await runAI(env, prompt, 420, MODELS_LONG);
   return json({ text });
 }
 
