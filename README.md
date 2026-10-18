@@ -1,6 +1,6 @@
-# 芸人人生 ― なにわの80年
+# 芸人人生 ― なにわの一代記
 
-18歳でNSC大阪校に入学してから80歳で幕が下りるまで、お笑い芸人の一生を疑似体験するブラウザゲームです。PC・iPhone（Safari）どちらでも遊べます。
+18歳でNSC大阪校に入学してから大往生まで、お笑い芸人の一生を疑似体験するブラウザゲームです。PC・iPhone（Safari）どちらでも遊べます。
 
 ## 要件
 
@@ -53,7 +53,7 @@
 | AI | Workers AI（`@cf/google/gemma-3-12b-it`、失敗時 `@cf/meta/llama-3.3-70b-instruct-fp8-fast`） | Cloudflare内で完結し、APIキーの管理が不要。Gemmaは日本語が比較的得意で、混雑時は別モデルに自動切り替え |
 | ランキング保存 | Durable Objects（SQLite付き） | データベースIDを設定ファイルに書く必要がなく、`deploy` だけで作られる。初心者がつまずきにくい |
 | ゲーム状態の保存 | ブラウザの localStorage | 通信不要で即保存。オフラインでも続きから遊べる |
-| テスト | Node.js（ロジック・API）＋Playwright（実ブラウザ操作） | 18〜80歳まで実際にボタンを押して最後まで遊び切るテストを、PCとiPhone画面の両方で自動実行 |
+| テスト | Node.js（ロジック・API）＋Playwright（実ブラウザ操作） | 18歳から人生の最後まで実際にボタンを押して最後まで遊び切るテストを、PCとiPhone画面の両方で自動実行 |
 | 公開 | Cloudflare の Git 連携（Workers Builds）＋ GitHub Actions のテスト | push するだけで公開され、APIトークンの管理が要らない |
 
 AIやランキングにつながらない時も、代わりの文章が出るのでゲームは止まりません。
