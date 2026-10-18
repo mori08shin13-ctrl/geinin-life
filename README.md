@@ -109,6 +109,19 @@ python tests/e2e.py            # ブラウザで実際に遊ぶE2Eテスト（PC
 python tests/e2e.py --base https://geinin-life.xxxx.workers.dev   # 公開版に対して実行
 ```
 
+
+## ご意見・ご要望（管理者だけが読める）
+
+結果画面の「ゲームへのご意見・ご要望」から、プレイヤーが自由に書いて送れます。送られた内容は Cloudflare の中（Durable Object）に保存され、ほかのプレイヤーには表示されません。
+
+**読み方**
+1. 最初の1回だけ、Cloudflare に管理者パスワードを登録する
+   - ダッシュボード →「Workers & Pages」→ `geinin-life` →「Settings」→「Variables and Secrets」→「Add」
+   - Type は **Secret**、Name は `ADMIN_PASSWORD`、Value に自分で決めたパスワード（12文字以上推奨）を入れて保存
+2. `https://geinin-life.<あなたのサブドメイン>.workers.dev/admin.html` を開いてパスワードを入力
+
+パスワードが登録されていない間は、誰も一覧を読めません（パスワードを知らない人も読めません）。IPアドレスは保存せず、連投防止のための目印だけを残します。
+
 ## ファイル構成
 
 ```
@@ -119,6 +132,7 @@ public/            画面（そのまま配信される）
   js/engine.js     ゲームのルール（3か月ごとの計算、賞レース、収入など）
   js/events.js     年1回の3択イベント
   js/data.js       実在の番組・芸人・賞レース・劇場のデータ
+  admin.html       管理画面（ご意見・ご要望を読む）
 src/
   worker.js        Cloudflare Worker の入口とランキング（Durable Object）
   api.js           Workers AI とランキングのAPI

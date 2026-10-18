@@ -35,3 +35,34 @@ export class HallOfFame extends DurableObject {
     return this.sql.exec('SELECT name, unit, lifetime, awards, army FROM hof ORDER BY lifetime DESC LIMIT 10').toArray();
   }
 }
+
+// ご意見・ご要望の保管庫（管理者だけが読める）
+export class FeedbackBox extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.sql = ctx.storage.sql;
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      text TEXT, name TEXT, unit TEXT, age INTEGER, lifetime INTEGER, ua TEXT, who TEXT,
+      created_at INTEGER
+    )`);
+  }
+  async add(e) {
+    const now = Date.now();
+    // 同じ人からの連投は1分に3件まで
+    const recent = this.sql.exec('SELECT COUNT(*) AS n FROM feedback WHERE who = ? AND created_at > ?', e.who, now - 60000).one().n;
+    if (recent >= 3) return { limited: true };
+    this.sql.exec('INSERT INTO feedback (text, name, unit, age, lifetime, ua, who, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      e.text, e.name, e.unit, e.age, e.lifetime, e.ua, e.who, now);
+    // 古いものから消して最大5000件
+    this.sql.exec('DELETE FROM feedback WHERE id NOT IN (SELECT id FROM feedback ORDER BY id DESC LIMIT 5000)');
+    return { ok: true };
+  }
+  async list() {
+    return this.sql.exec('SELECT id, text, name, unit, age, lifetime, ua, created_at FROM feedback ORDER BY id DESC LIMIT 500').toArray();
+  }
+  async remove(id) {
+    this.sql.exec('DELETE FROM feedback WHERE id = ?', id);
+    return true;
+  }
+}

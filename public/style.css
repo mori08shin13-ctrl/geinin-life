@@ -494,3 +494,27 @@ a.btn { display: grid; place-items: center; text-decoration: none; }
 
 /* イベントのシートは背景をぼかさない（モザイクなし） */
 .sheet.glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ---------- ご意見・ご要望 ---------- */
+.feedback textarea { resize: vertical; min-height: 110px; line-height: 1.6; font-size: 16px; }
+.feedback .hint { color: var(--sub); font-size: 13px; margin: -4px 0 10px; }
+.fb-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.fb-count { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.fb-send { width: auto; min-height: 46px; padding: 10px 22px; font-size: 15px; }
+.fb-msg { margin: 10px 0 0; font-size: 13px; color: #1f8a70; min-height: 1.2em; }
+.fb-msg.err { color: var(--red); }
+.feedback.sent .fb-send { background: linear-gradient(135deg, #3fc7a6, #1f8a70); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- 管理画面 ---------- */
+.admin-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.admin-head h1 { font-family: var(--display); font-weight: 400; font-size: 22px; margin: 0; }
+.admin-tools { display: flex; gap: 8px; }
+.admin-tools .btn { width: auto; min-height: 40px; padding: 8px 16px; font-size: 13px; }
+.fb-item { padding: 16px; margin-bottom: 10px; }
+.fb-item .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--sub); margin-bottom: 6px; }
+.fb-item .body { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 10px; }
+.fb-item .actions { display: flex; gap: 8px; justify-content: flex-end; }
+.fb-item .actions button { border: 1px solid #fff; background: rgba(255,255,255,.8); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+.fb-item .actions .danger { color: var(--red); }
+.admin-empty { text-align: center; color: var(--sub); padding: 30px 10px; }

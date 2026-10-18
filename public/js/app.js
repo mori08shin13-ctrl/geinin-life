@@ -655,6 +655,16 @@ function resultScreen() {
           <p class="eulogy">${esc(eulogy)}</p>
         </div>
 
+        <form class="r-card glass feedback" style="animation-delay:.28s" data-testid="feedback-form" novalidate>
+          <h3><span class="ic">✉️</span>ゲームへのご意見・ご要望</h3>
+          <p class="hint">改善してほしいところや欲しい機能を自由に書いてください。内容は運営者だけが読みます（ほかのプレイヤーには表示されません）。</p>
+          <label for="feedback-text" class="sr-only">ご意見・ご要望</label>
+          <textarea class="input" id="feedback-text" maxlength="1000" rows="4" placeholder="例：イベントのテンポをもう少しゆっくりにしてほしい" data-testid="feedback-text"></textarea>
+          <div class="fb-row"><span class="fb-count" data-testid="feedback-count">0 / 1000</span>
+          <button class="btn primary fb-send" type="submit" data-testid="feedback-send">送信する</button></div>
+          <p class="fb-msg" data-testid="feedback-msg" role="status"></p>
+        </form>
+
         <div class="r-card glass" style="animation-delay:.3s" data-testid="result-hof">
           <h3><span class="ic">👑</span>殿堂入りランキング</h3>
           <div data-slot="hof"><div class="sk sk-row"></div></div>
@@ -675,8 +685,37 @@ function resultScreen() {
       lastShare = null;
       drawResultImage(r, location.host).then((blob) => { lastShare = blob; }).catch(() => {});
       submitHof(root, r);
+      wireFeedback(root, r);
     },
   }, { skeleton: 'result', minMs: 900 });
+}
+
+// ご意見・ご要望の送信（運営者だけが読める）
+function wireFeedback(root, r) {
+  const form = root.querySelector('[data-testid=feedback-form]');
+  const ta = form.querySelector('textarea');
+  const count = form.querySelector('[data-testid=feedback-count]');
+  const msg = form.querySelector('[data-testid=feedback-msg]');
+  const btn = form.querySelector('[data-testid=feedback-send]');
+  ta.addEventListener('input', () => { count.textContent = `${ta.value.length} / 1000`; });
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = ta.value.trim();
+    if (text.length < 2) { msg.textContent = '2文字以上で書いてください。'; msg.className = 'fb-msg err'; ta.focus(); return; }
+    btn.disabled = true; btn.textContent = '送信中…'; msg.textContent = ''; msg.className = 'fb-msg';
+    try {
+      await api('/api/feedback', { text, name: r.name, unit: r.unit, age: r.deathAge, lifetime: r.lifetime });
+      form.classList.add('sent');
+      ta.value = ''; ta.disabled = true; count.textContent = '';
+      btn.textContent = '送信しました';
+      msg.textContent = 'ありがとうございます！いただいた声は今後の改善に使わせてもらいます。';
+    } catch (err) {
+      btn.disabled = false; btn.textContent = '送信する';
+      msg.className = 'fb-msg err';
+      msg.textContent = String(err?.message) === '429' ? '続けて送られています。1分ほど待ってからもう一度送ってください。'
+        : '送信できませんでした。通信環境を確認して、もう一度送ってください。';
+    }
+  };
 }
 
 function fallbackEulogy(r) {

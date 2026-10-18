@@ -114,10 +114,65 @@ async function hof(req, env) {
   return json({ top: await stub.top() });
 }
 
+// ---------- ご意見・ご要望（管理者だけが読める） ----------
+const enc = new TextEncoder();
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+// 長さに関係なく同じ時間で比べる（パスワードの推測対策）
+export async function safeEqual(a, b) {
+  const [x, y] = await Promise.all([sha256(String(a)), sha256(String(b))]);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return diff === 0;
+}
+async function isAdmin(req, env) {
+  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  return !!env.ADMIN_PASSWORD && !!token && safeEqual(token, env.ADMIN_PASSWORD);
+}
+
+async function feedback(req, env) {
+  if (!env.FEEDBACK) return json({ error: 'unavailable' }, 503);
+  const box = env.FEEDBACK.get(env.FEEDBACK.idFromName('global'));
+  const b = await req.json().catch(() => ({}));
+  const text = String(b.text ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, 1000);
+  if (text.length < 2) return json({ error: '2文字以上で書いてください' }, 400);
+  // 連投防止用。IPアドレスそのものは保存しない
+  const ip = req.headers.get('cf-connecting-ip') || 'local';
+  const who = (await sha256(`${ip}:${env.ADMIN_PASSWORD || 'salt'}`)).slice(0, 16);
+  const res = await box.add({
+    text, who,
+    name: clip(b.name, 20), unit: clip(b.unit, 20),
+    age: Math.max(0, Math.min(100, Number(b.age) | 0)),
+    lifetime: Math.max(-1e6, Math.min(1e7, Math.round(Number(b.lifetime) || 0))),
+    ua: clip(req.headers.get('user-agent'), 120),
+  });
+  if (res.limited) return json({ error: '少し時間をおいてから送ってください' }, 429);
+  return json({ ok: true });
+}
+
+async function adminFeedback(req, env) {
+  if (!env.ADMIN_PASSWORD) return json({ error: '管理者パスワードがまだ設定されていません' }, 503);
+  if (!(await isAdmin(req, env))) return json({ error: 'パスワードが違います' }, 401);
+  if (!env.FEEDBACK) return json({ items: [] });
+  const box = env.FEEDBACK.get(env.FEEDBACK.idFromName('global'));
+  const url = new URL(req.url);
+  if (req.method === 'DELETE') {
+    const id = Number(url.searchParams.get('id'));
+    if (!id) return json({ error: 'id がありません' }, 400);
+    await box.remove(id);
+    return json({ ok: true });
+  }
+  return json({ items: await box.list() });
+}
+
 export async function handleApi(req, env) {
   const { pathname } = new URL(req.url);
   try {
-    if (pathname === '/api/health') return json({ ok: true, ai: !!env.AI, hof: !!env.HOF });
+    if (pathname === '/api/health') return json({ ok: true, ai: !!env.AI, hof: !!env.HOF, feedback: !!env.FEEDBACK, admin: !!env.ADMIN_PASSWORD });
+    if (pathname === '/api/feedback' && req.method === 'POST') return await feedback(req, env);
+    if (pathname === '/api/admin/feedback') return await adminFeedback(req, env);
     if (pathname === '/api/comment' && req.method === 'POST') return await comment(req, env);
     if (pathname === '/api/eulogy' && req.method === 'POST') return await eulogy(req, env);
     if (pathname === '/api/hof') return await hof(req, env);

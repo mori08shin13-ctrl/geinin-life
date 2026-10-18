@@ -11,8 +11,15 @@
   },
   "ai": { "binding": "AI" },
   "durable_objects": {
-    "bindings": [{ "name": "HOF", "class_name": "HallOfFame" }]
+    "bindings": [
+      { "name": "HOF", "class_name": "HallOfFame" },
+      { "name": "FEEDBACK", "class_name": "FeedbackBox" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HallOfFame"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["HallOfFame"] },
+    { "tag": "v2", "new_sqlite_classes": ["FeedbackBox"] }
+  ],
+  // 管理画面のパスワード ADMIN_PASSWORD は、Cloudflare の「Variables and Secrets」に Secret として登録する
   "observability": { "enabled": true }
 }

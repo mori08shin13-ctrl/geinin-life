@@ -36,6 +36,7 @@ def serve():
 
 
 HOF = []
+FEEDBACK = []
 
 
 def mock_api(page, ai_ok=True, comment="AIのツッコミやで！"):
@@ -48,6 +49,18 @@ def mock_api(page, ai_ok=True, comment="AIのツッコミやで！"):
             return route.fulfill(json={"comment": comment, "persona": "大阪のおかん"})
         if path == "eulogy":
             return route.fulfill(json={"text": "モックの弔辞です。ほんまお疲れさん。"})
+        if path == "feedback":
+            FEEDBACK.append(json.loads(req.post_data))
+            return route.fulfill(json={"ok": True})
+        if path.startswith("admin/feedback"):
+            if req.headers.get("authorization") != "Bearer test-pass":
+                return route.fulfill(status=401, json={"error": "パスワードが違います"})
+            if req.method == "DELETE":
+                fid = int(req.url.split("id=")[1])
+                FEEDBACK[:] = [f for i, f in enumerate(FEEDBACK) if i + 1 != fid]
+                return route.fulfill(json={"ok": True})
+            items = [{"id": i + 1, "created_at": 1760000000000, **f} for i, f in enumerate(FEEDBACK)]
+            return route.fulfill(json={"items": items})
         if path == "hof":
             if req.method == "POST":
                 HOF.append(json.loads(req.post_data))
@@ -190,6 +203,16 @@ def test_full_life(browser, base, device):
     death = assert_result(page, name)
     expect(page.get_by_test_id("result-eulogy")).to_contain_text("モックの弔辞")
     expect(page.get_by_test_id("hof-list")).to_contain_text(name)
+    # ご意見・ご要望を送る
+    form = page.get_by_test_id("feedback-form")
+    expect(form).to_be_visible()
+    page.get_by_test_id("feedback-send").click()
+    expect(page.get_by_test_id("feedback-msg")).to_contain_text("2文字以上")
+    page.get_by_test_id("feedback-text").fill("特別イベントをもっと増やしてほしいです")
+    expect(page.get_by_test_id("feedback-count")).to_contain_text("19 / 1000")
+    page.get_by_test_id("feedback-send").click()
+    expect(page.get_by_test_id("feedback-msg")).to_contain_text("ありがとうございます")
+    assert FEEDBACK[-1]["text"] == "特別イベントをもっと増やしてほしいです" and FEEDBACK[-1]["name"] == name, FEEDBACK[-1]
     toasts = page.evaluate("window.__toasts")
     assert any(toasts.get(k) for k in ("theater", "tv", "race", "win")), toasts
     # 結果画面の画像
@@ -246,6 +269,29 @@ def test_no_mosaic_on_pause_and_event(browser, base, device):
     q1 = page.evaluate("window.__geinin.state.q")
     page.wait_for_timeout(400)
     assert page.evaluate("window.__geinin.state.q") == q1, "一時停止中は進まない"
+    ctx.close()
+
+
+def test_admin_page(browser, base, device):
+    FEEDBACK[:] = [{"text": "テンポがちょうどいい！", "name": "森", "unit": "たこ焼き銀河", "age": 84},
+                   {"text": "<script>alert(1)</script> もっとイベントを", "name": "浪花", "unit": "ピン", "age": 77}]
+    ctx = browser.new_context(**device)
+    page = ctx.new_page()
+    mock_api(page)
+    page.goto(f"{base}/admin.html")
+    expect(page.get_by_test_id("admin-login")).to_be_visible()
+    expect(page.get_by_test_id("admin-items")).to_be_hidden()
+    page.get_by_test_id("admin-password").fill("wrong")
+    page.get_by_test_id("admin-login-btn").click()
+    expect(page.get_by_test_id("admin-error")).to_contain_text("パスワードが違います")
+    page.get_by_test_id("admin-password").fill("test-pass")
+    page.get_by_test_id("admin-login-btn").click()
+    expect(page.get_by_test_id("admin-list")).to_be_visible()
+    expect(page.get_by_test_id("admin-item")).to_have_count(2)
+    expect(page.get_by_test_id("admin-items")).to_contain_text("<script>alert(1)</script>")  # 文字として表示（実行されない）
+    page.get_by_test_id("admin-item").first.locator(".del").click()
+    page.get_by_test_id("admin-item").first.locator(".del").click()
+    expect(page.get_by_test_id("admin-item")).to_have_count(1)
     ctx.close()
 
 

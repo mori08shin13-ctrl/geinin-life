@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>芸人人生 管理画面</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="stage-bg" aria-hidden="true"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span></div>
+  <main id="app">
+    <section class="screen" id="login" data-testid="admin-login">
+      <form class="panel glass" novalidate>
+        <h2>管理画面</h2>
+        <p class="hint">プレイヤーから届いたご意見・ご要望を読めます。管理者パスワードを入力してください。</p>
+        <div class="field">
+          <label for="admin-password">管理者パスワード</label>
+          <input class="input" id="admin-password" type="password" autocomplete="current-password" data-testid="admin-password" required>
+        </div>
+        <p class="hint" id="login-error" data-testid="admin-error" style="color:var(--red);min-height:1.5em;margin:0 0 6px"></p>
+        <button class="btn primary" type="submit" data-testid="admin-login-btn">ログイン</button>
+      </form>
+    </section>
+    <section class="screen" id="list" data-testid="admin-list" hidden>
+      <div class="admin-head">
+        <h1>ご意見・ご要望 <span id="total" data-testid="admin-total"></span></h1>
+        <div class="admin-tools">
+          <button class="btn glass" id="reload" type="button">更新</button>
+          <button class="btn glass" id="logout" type="button">ログアウト</button>
+        </div>
+      </div>
+      <div id="items" data-testid="admin-items"></div>
+    </section>
+  </main>
+  <div id="toast-root" aria-live="assertive"></div>
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>
