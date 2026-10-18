@@ -196,10 +196,10 @@ def test_full_life(browser, base, device):
     play_to_end(page, on_event=on_event, info=info)
     qs = [e["q"] for e in info]
     gaps = {b - a for a, b in zip(qs, qs[1:])}
-    assert gaps == {2}, f"イベントは半年(2四半期)ごとのはず: {gaps}"
+    assert gaps == {4}, f"イベントは1年(4四半期)ごとのはず: {gaps}"
     specials = [e for e in info if e["special"]]
-    assert specials and all(e["q"] % 16 == 8 for e in specials), specials[:3]
-    assert len(specials) >= len([q for q in qs if q % 16 == 8]) - 1, "4年に1回の特別イベント"
+    assert specials and all(e["q"] % 20 == 8 for e in specials), specials[:3]
+    assert len(specials) >= len([q for q in qs if q % 20 == 8]) - 1, "5年に1回の特別イベント"
     death = assert_result(page, name)
     expect(page.get_by_test_id("result-eulogy")).to_contain_text("モックの弔辞")
     expect(page.get_by_test_id("hof-list")).to_contain_text(name)

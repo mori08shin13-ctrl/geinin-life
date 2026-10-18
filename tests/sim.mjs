@@ -12,7 +12,7 @@ for (let i = 0; i < N; i++) {
       if (E.needsEvent(s)) {
         const ev = E.pickEvent(s); events++;
         if (ev.choices.length !== 3) throw new Error('choices!=3 ' + ev.key);
-        if (s.q - lastEventQ !== 2 && lastEventQ >= 0) throw new Error('event gap ' + (s.q - lastEventQ));
+        if (s.q - lastEventQ !== E.EVENT_EVERY_Q && lastEventQ >= 0) throw new Error('event gap ' + (s.q - lastEventQ));
         if (E.isSpecialSlot(s) && s.q > 0 && !ev.special && !ev.key.startsWith('hand:army_form') && !ev.key.startsWith('hand:nsc')) throw new Error('special slot missed ' + ev.key);
         lastEventQ = s.q;
         titles.add(ev.title);

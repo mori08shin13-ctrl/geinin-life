@@ -424,7 +424,7 @@ function step() {
 }
 
 // =================================================================
-//  イベント（半年に1回）／特別イベント（4年に1回）
+//  イベント（1年に1回）／特別イベント（5年に1回）
 // =================================================================
 const STAT_JA = { neta: 'ネタ', talk: 'トーク', act: '演技', mental: 'メンタル', health: '体力', fame: '知名度', money: 'お金' };
 const OUTCOME = { great: ['大成功！', 'great'], ok: ['成功', 'ok'], fail: ['失敗…', 'fail'] };
@@ -478,7 +478,7 @@ function openSpecial(ev) {
       <canvas class="sparkle" aria-hidden="true"></canvas>
     </div>
     <div class="sheet glass special" role="dialog" aria-modal="true" aria-labelledby="ev-title" data-testid="event-sheet" data-special="1">
-      <div class="sp-ribbon" data-testid="special-badge"><span>4年に1度の特別イベント</span></div>
+      <div class="sp-ribbon" data-testid="special-badge"><span>5年に1度の特別イベント</span></div>
       <div class="ev-age">${E.age(S)}歳の${E.season(S)} ― ${E.year(S)}年　人生の分かれ道</div>
       <h2 id="ev-title" class="sp-title" data-testid="event-title">${[...ev.title].map((ch, i) => `<span style="--i:${i}">${esc(ch)}</span>`).join('')}</h2>
       <p class="ev-text">${esc(ev.text)}</p>
