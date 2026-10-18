@@ -1,0 +1,192 @@
+// ===============================================================
+//  ゲームデータ（実在の番組・芸人・賞レース・劇場）
+//  ※実在の芸人は「共演」「軍団入り」など好意的・中立的な形でのみ登場させる
+// ===============================================================
+
+export const START_YEAR = 2027; // 18歳の春（4月）にNSC大阪校へ入学
+export const START_AGE = 18;
+export const END_AGE = 80;
+
+export const SEASONS = ['春', '夏', '秋', '冬'];
+
+// 芸人ランク（知名度 fame で決まる）
+export const TIERS = [
+  { min: 0, name: 'NSC生・ド若手', income: 3, color: '#a0a7b4' },
+  { min: 40, name: '劇場若手', income: 10, color: '#8fb3ff' },
+  { min: 120, name: '劇場の看板', income: 40, color: '#6ec6c3' },
+  { min: 260, name: 'テレビ若手', income: 150, color: '#7ed37a' },
+  { min: 450, name: 'ブレイク芸人', income: 450, color: '#ffc04d' },
+  { min: 650, name: '売れっ子', income: 1000, color: '#ff8a5c' },
+  { min: 850, name: '大御所', income: 1600, color: '#e85d9c' },
+];
+
+// 賞レース（優勝のみ記録）
+// q: 決勝が行われる四半期 0=春(4-6月) 1=夏(7-9月) 2=秋(10-12月) 3=冬(1-3月)
+export const RACES = [
+  { id: 'second', name: 'THE SECOND', q: 0, prize: 1000, fameGain: 200,
+    eligible: (s) => isGroup(s) && unitYears(s) >= 16, skill: 'neta', difficulty: 70 },
+  { id: 'kamigata', name: 'NHK上方漫才コンテスト', q: 1, prize: 100, fameGain: 40,
+    eligible: (s) => isGroup(s) && careerYears(s) <= 10, skill: 'neta', difficulty: 50 },
+  { id: 'abc', name: 'ABCお笑いグランプリ', q: 1, prize: 100, fameGain: 50,
+    eligible: (s) => s.unit.type !== 'none' && careerYears(s) <= 12, skill: 'neta', difficulty: 54 },
+  { id: 'koc', name: 'キングオブコント', q: 2, prize: 1000, fameGain: 220,
+    eligible: (s) => s.unit.type !== 'none', skill: 'act', difficulty: 66 },
+  { id: 'm1', name: 'M-1グランプリ', q: 2, prize: 1000, fameGain: 300,
+    eligible: (s) => isGroup(s) && unitYears(s) <= 15, skill: 'neta', difficulty: 72 },
+  { id: 'thew', name: 'THE W', q: 2, prize: 1000, fameGain: 160,
+    eligible: (s) => s.gender === 'female' && s.unit.type !== 'none', skill: 'neta', difficulty: 70 },
+  { id: 'r1', name: 'R-1グランプリ', q: 3, prize: 500, fameGain: 180,
+    eligible: (s) => s.unit.type === 'pin', skill: 'neta', difficulty: 72 },
+  { id: 'kamigata-taisho', name: '上方漫才大賞', q: 3, prize: 100, fameGain: 90,
+    eligible: (s) => isGroup(s) && careerYears(s) >= 8, skill: 'neta', difficulty: 70 },
+];
+
+export function isGroup(s) { return s.unit.type === 'combi' || s.unit.type === 'trio'; }
+export function careerYears(s) { return Math.floor(s.q / 4); }
+export function unitYears(s) { return s.unit.formedQ == null ? 0 : Math.floor((s.q - s.unit.formedQ) / 4); }
+
+// 実在するテレビ番組
+// minFame: 出演に必要な知名度の目安
+export const SHOWS = [
+  // 関西ローカル・若手向け
+  { title: 'よしもと新喜劇', genre: 'バラエティ', minFame: 20 },
+  { title: '探偵!ナイトスクープ', genre: 'バラエティ', minFame: 90 },
+  { title: 'せやねん!', genre: 'バラエティ', minFame: 70 },
+  { title: '痛快!明石家電視台', genre: 'バラエティ', minFame: 150 },
+  { title: '相席食堂', genre: 'バラエティ', minFame: 200 },
+  { title: 'ネタパレ', genre: 'バラエティ', minFame: 140 },
+  // 全国ネット
+  { title: '有吉の壁', genre: 'バラエティ', minFame: 230 },
+  { title: 'ゴッドタン', genre: 'バラエティ', minFame: 250 },
+  { title: 'ラヴィット!', genre: 'バラエティ', minFame: 270 },
+  { title: 'アメトーーク!', genre: 'バラエティ', minFame: 300 },
+  { title: '水曜日のダウンタウン', genre: 'バラエティ', minFame: 320 },
+  { title: 'ロンドンハーツ', genre: 'バラエティ', minFame: 330 },
+  { title: 'ヒルナンデス!', genre: 'バラエティ', minFame: 300 },
+  { title: '新しいカギ', genre: 'バラエティ', minFame: 340 },
+  { title: '千鳥の鬼レンチャン', genre: 'バラエティ', minFame: 360 },
+  { title: 'しくじり先生 俺みたいになるな!!', genre: 'バラエティ', minFame: 380 },
+  { title: 'あちこちオードリー', genre: 'バラエティ', minFame: 400 },
+  { title: '踊る!さんま御殿!!', genre: 'バラエティ', minFame: 420 },
+  { title: 'しゃべくり007', genre: 'バラエティ', minFame: 460 },
+  { title: '世界の果てまでイッテQ!', genre: 'バラエティ', minFame: 500 },
+  { title: 'IPPONグランプリ', genre: 'バラエティ', minFame: 520 },
+  { title: 'オールスター感謝祭', genre: 'バラエティ', minFame: 480 },
+  { title: 'FNS27時間テレビ', genre: 'バラエティ', minFame: 560 },
+  { title: '笑点', genre: 'バラエティ', minFame: 700 },
+  // ドラマ（実在の枠）
+  { title: 'テレ東 深夜ドラマ', genre: 'ドラマ', minFame: 200, act: 30 },
+  { title: 'NHK 土曜ドラマ', genre: 'ドラマ', minFame: 320, act: 45 },
+  { title: 'フジテレビ 月9ドラマ', genre: 'ドラマ', minFame: 420, act: 50 },
+  { title: 'TBS 日曜劇場', genre: 'ドラマ', minFame: 480, act: 58 },
+  { title: 'NHK 連続テレビ小説（朝ドラ）', genre: 'ドラマ', minFame: 520, act: 60 },
+  { title: 'NHK 大河ドラマ', genre: 'ドラマ', minFame: 600, act: 66 },
+  // 映画（作品名は架空）
+  { title: '映画『たこ焼き銀河鉄道』', genre: '映画', minFame: 380, act: 55 },
+  { title: '映画『通天閣より愛をこめて』', genre: '映画', minFame: 450, act: 60 },
+  { title: '映画『ボケて、ツッコんで、生きて。』', genre: '映画', minFame: 520, act: 64 },
+  { title: '映画『なにわ探偵スクランブル』', genre: '映画', minFame: 600, act: 70 },
+  // ラジオ・CM
+  { title: 'オールナイトニッポン', genre: 'ラジオ', minFame: 450 },
+  { title: 'MBSヤングタウン', genre: 'ラジオ', minFame: 260 },
+  { title: '全国CM（ビール）', genre: 'CM', minFame: 600 },
+  { title: '全国CM（携帯キャリア）', genre: 'CM', minFame: 520 },
+];
+
+// 実在する芸人（共演・先輩として登場）
+export const SENPAI = [
+  '明石家さんま', '今田耕司', '東野幸治', '千鳥', 'かまいたち', 'ブラックマヨネーズ',
+  'フットボールアワー', '博多華丸・大吉', 'サンドウィッチマン', '有吉弘行', '陣内智則',
+  '友近', '小籔千豊', 'ケンドーコバヤシ', '銀シャリ', 'NON STYLE', '笑い飯',
+];
+
+// 実在する芸人（軍団メンバー候補）
+export const ARMY_POOL = [
+  { name: '粗品', unit: '霜降り明星' }, { name: 'せいや', unit: '霜降り明星' },
+  { name: '濱家隆一', unit: 'かまいたち' }, { name: '山内健司', unit: 'かまいたち' },
+  { name: '盛山晋太郎', unit: '見取り図' }, { name: 'リリー', unit: '見取り図' },
+  { name: '内海崇', unit: 'ミルクボーイ' }, { name: '駒場孝', unit: 'ミルクボーイ' },
+  { name: '髙比良くるま', unit: '令和ロマン' }, { name: '松井ケムリ', unit: '令和ロマン' },
+  { name: '堂前透', unit: 'ロングコートダディ' }, { name: '兎', unit: 'ロングコートダディ' },
+  { name: '嶋佐和也', unit: 'ニューヨーク' }, { name: '屋敷裕政', unit: 'ニューヨーク' },
+  { name: '畠中悠', unit: 'オズワルド' }, { name: '伊藤俊介', unit: 'オズワルド' },
+  { name: '後藤淳平', unit: 'ジャルジャル' }, { name: '福徳秀介', unit: 'ジャルジャル' },
+  { name: '橋本直', unit: '銀シャリ' }, { name: '鰻和弘', unit: '銀シャリ' },
+  { name: '川原克己', unit: '天竺鼠' }, { name: '近藤春菜', unit: 'ハリセンボン' },
+  { name: '箕輪はるか', unit: 'ハリセンボン' }, { name: 'ゆりやんレトリィバァ', unit: 'ピン' },
+  { name: '渡辺直美', unit: 'ピン' }, { name: 'イワクラ', unit: '蛙亭' },
+  { name: '福田麻貴', unit: '3時のヒロイン' }, { name: 'ヒコロヒー', unit: 'ピン' },
+  { name: '吉住', unit: 'ピン' }, { name: '熊元プロレス', unit: '紅しょうが' },
+];
+
+export const THEATERS = {
+  osaka: ['よしもと漫才劇場', 'なんばグランド花月', '祇園花月'],
+  tokyo: ['ルミネtheよしもと', '神保町よしもと漫才劇場', '渋谷よしもと漫才劇場'],
+};
+
+// 架空の相方・配偶者の名前
+export const PARTNER_NAMES = {
+  male: ['田中 ケンタ', '浜口 リョウ', '岡本 ダイキ', '松尾 ユウスケ', '藤原 タクミ', '吉川 ショウ', '坂口 マサト', '中島 ゴウ'],
+  female: ['宮本 アヤ', '森 ミサキ', '川口 ナナ', '西村 ユイ', '大橋 カナ', '山下 リナ', '野口 サキ', '石田 マユ'],
+};
+export const SPOUSE_NAMES = {
+  male: ['ヒロシ', 'タカシ', 'ケンジ', 'ユウタ', 'ショウタ', 'ダイスケ'],
+  female: ['ミホ', 'サヤカ', 'ユカ', 'マイ', 'アヤカ', 'ナツミ'],
+};
+export const COMBI_NAMES = [
+  'ミッドナイト餃子', 'たこ焼き銀河', '通天閣ブラザーズ', 'なにわロケット', '粉もんジェット',
+  'ハイパー串カツ', '大阪湾スプラッシュ', 'ヒョウ柄エンジェル', 'まいどスパイダー', 'ジャンジャン横丁',
+  'ちくわパラダイス', '終電カーニバル', 'ごりごりメロン', 'ドテ焼きランデブー', '月曜ボルケーノ',
+];
+export const TRIO_NAMES = ['三色だんご侍', 'トリプル紅しょうが', 'パンダ・パンダ・パンダ', '三人寄ればモンジャ'];
+
+// 四半期ごとの小ネタ（関西弁）
+export const FLAVOR = {
+  low: [
+    '劇場の出番は5秒。ほぼ挨拶だけで終わってもうた。',
+    'バイト先の居酒屋で店長にネタ見せたら「で、オチは？」言われた。',
+    '家賃3万のアパートで、壁越しに隣の人の笑い声が聞こえる。ワシのネタより笑てる。',
+    'もやし30円。今週もこれで乗り切るで。',
+    'オーディション落選。審査員、目ぇ合わしてくれへんかった。',
+    '先輩の荷物持ちで一日終わった。腕だけムキムキになってきた。',
+    '路上ライブ。客2人。1人は鳩やった。',
+    '新ネタ下ろし。ウケは…まぁ、湿度高めやったな。',
+  ],
+  mid: [
+    '劇場の出番が増えてきた。出待ちのファンが3人おる！',
+    '深夜番組のひな壇。一言だけ爪痕残したった。',
+    '営業で地方のショッピングモール。子どもにめっちゃウケた。',
+    '単独ライブ完売！楽屋で泣いたのは内緒や。',
+    'ネタ番組収録。カメラ目線の練習しといてよかった。',
+    '後輩にメシ奢れるようになった。財布はまだ泣いとる。',
+  ],
+  high: [
+    'レギュラー番組の収録が3本。移動の車で爆睡や。',
+    'CMのオファーが来た。マネージャーが小躍りしとる。',
+    '街を歩くと「あっ！」て指差される。ちょっと照れる。',
+    '冠番組の視聴率が好調。プロデューサーと焼肉や。',
+    '新幹線のグリーン車、まだ慣れへん。',
+  ],
+  senior: [
+    '若手のネタ見て「ええやんけ」言うたら泣かれた。',
+    'NGKの出番。客席の笑いがあったかい。',
+    '人間ドックの結果、ちょっと血圧高め。塩分控えなアカン。',
+    '孫に「じいじ（ばあば）テレビの人やろ？」言われて照れた。',
+    '昔の映像見返したら髪がフサフサやった。時は残酷や。',
+  ],
+  era: [
+    { from: 2035, text: 'AIが漫才する時代やて。でも「間」はまだ人間の勝ちや。' },
+    { from: 2045, text: 'ホログラム劇場が流行り出した。立体のワシ、ちょっと太って見える。' },
+    { from: 2060, text: '宇宙ステーション営業の打診が来た。重力ないとツッコミの手が空振りする。' },
+  ],
+};
+
+// AI が使えないときの代わりのコメント
+export const FALLBACK_COMMENTS = [
+  'その選択、なかなかシブいやん！',
+  'お前、ほんまおもろい人生歩んどるなぁ。',
+  'それでええねん。芸人は転んでナンボや！',
+  'いや、なんでやねん！…でも嫌いやないで。',
+  'その判断、10年後に効いてくるで。知らんけど。',
+  '攻めとるなぁ！客席もザワついとるで。',
+];

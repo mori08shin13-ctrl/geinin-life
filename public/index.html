@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>芸人人生 ― なにわの80年</title>
+  <meta name="description" content="NSCに18歳で入学してから80歳まで、お笑い芸人の一生を疑似体験するシミュレーションゲーム" />
+  <meta name="theme-color" content="#f6f7fb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="芸人人生" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- 舞台照明のように動く背景 -->
+  <div class="stage-bg" aria-hidden="true">
+    <span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span>
+  </div>
+
+  <main id="app" aria-live="polite">
+    <!-- 全画面スケルトン（JS読み込み前から表示） -->
+    <div class="skeleton-screen" data-testid="skeleton">
+      <div class="sk sk-mekuri"></div>
+      <div class="sk sk-line w60"></div>
+      <div class="sk sk-line w40"></div>
+      <div class="sk-grid">
+        <div class="sk sk-card"></div><div class="sk sk-card"></div>
+      </div>
+      <div class="sk sk-btn"></div>
+      <div class="sk sk-btn"></div>
+    </div>
+  </main>
+
+  <div id="sheet-root"></div>
+  <div id="toast-root" aria-live="assertive"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <noscript>このゲームはJavaScriptを有効にして遊んでください。</noscript>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

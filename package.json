@@ -1,0 +1,17 @@
+{
+  "name": "geinin-life",
+  "version": "1.0.0",
+  "private": true,
+  "description": "お笑い芸人の一生（18〜80歳）を疑似体験するブラウザゲーム",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "sim": "node tests/sim.mjs 300",
+    "test:unit": "node tests/api.test.mjs && node tests/sim.mjs 200",
+    "test:e2e": "python -m pytest tests/e2e -q"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
