@@ -55,20 +55,38 @@ export function cleanText(t) {
     .slice(0, 600);
 }
 
+// ツッコミ役のキャラクター（毎回ランダム）
+export const PERSONAS = [
+  { name: '劇場の先輩芸人', style: '面倒見のいい先輩芸人として、愛のあるダメ出し' },
+  { name: '大阪のおかん', style: '世話焼きの大阪のおかんとして、心配しつつ笑い飛ばす' },
+  { name: 'NSCの鬼講師', style: '厳しいNSCの講師として、短く鋭く' },
+  { name: '劇場の支配人', style: 'ベテランの劇場支配人として、ちょっと皮肉まじりに' },
+  { name: '常連のおっちゃん', style: '劇場に毎日来る常連のおっちゃんとして、なれなれしく' },
+  { name: '番組プロデューサー', style: 'テレビのプロデューサーとして、数字の話をからめて' },
+  { name: '未来の自分', style: '80歳になった未来の自分として、しみじみと' },
+  { name: '相方', style: '長年の相方として、遠慮なくどつくように' },
+  { name: '近所の小学生', style: '近所の生意気な小学生として、素直すぎる一言' },
+  { name: '実況アナウンサー', style: 'スポーツ実況のアナウンサーとして、大げさに盛り上げて' },
+  { name: '占い師', style: 'よく当たると評判の占い師として、意味ありげに' },
+  { name: '居酒屋の大将', style: '行きつけの居酒屋の大将として、人情味たっぷりに' },
+];
+
 async function comment(req, env) {
   const b = await req.json().catch(() => ({}));
+  const persona = PERSONAS[Math.floor(Math.random() * PERSONAS.length)];
   const prompt = `お笑い芸人人生ゲームの実況です。プレイヤーは${clip(b.age, 3)}歳の${clip(b.gender, 6) === 'female' ? '女性' : '男性'}芸人（${clip(b.unitType, 10)}・ランク「${clip(b.tier, 12)}」）。
 今年のイベント「${clip(b.title, 40)}」で「${clip(b.choice, 60)}」を選び、結果は「${clip(b.result, 160)}」。
-この選択に、関西弁で40文字以内のツッコミを一言だけ入れてください。`;
+結果は「${clip(b.outcome, 6) === 'great' ? '大成功' : clip(b.outcome, 6) === 'fail' ? '失敗' : 'ふつう'}」でした。
+あなたは${persona.style}ツッコミを入れます。関西弁で40文字以内の一言だけ答えてください。`;
   const text = await runAI(env, prompt, 80);
-  return json({ comment: text.split('\n')[0].slice(0, 80) });
+  return json({ comment: text.split('\n')[0].slice(0, 80), persona: persona.name });
 }
 
 async function eulogy(req, env) {
   const b = await req.json().catch(() => ({}));
   const awards = Array.isArray(b.awards) ? b.awards.slice(0, 10).map((a) => clip(a, 40)).join('、') : '';
   const family = Array.isArray(b.family) ? b.family.slice(0, 5).map((a) => clip(a, 30)).join('、') : '';
-  const prompt = `80歳で亡くなった架空のお笑い芸人「${clip(b.name, 20)}」（${clip(b.unit, 20)}／${clip(b.unitType, 10)}）への弔辞を書いてください。
+  const prompt = `${Math.max(55, Math.min(100, Number(b.age) || 80))}歳で亡くなった架空のお笑い芸人「${clip(b.name, 20)}」（${clip(b.unit, 20)}／${clip(b.unitType, 10)}）への弔辞を書いてください。
 経歴: 18歳でNSC大阪校入学、最終ランク「${clip(b.tier, 12)}」、生涯年収 約${Math.round(Number(b.lifetime) || 0)}万円、賞レース優勝: ${awards || 'なし'}、家族: ${family}、テレビ・映画出演 ${Number(b.tvCount) || 0}作品${b.army ? `、${clip(b.army, 20)}（${Number(b.armyCount) || 0}人）の団長` : ''}。
 笑いと涙が両方ある関西弁の弔辞を、4〜5文・220文字以内で。最後はボケで締めてください。
 すべて関西弁の日本語で書き、英単語は使わないこと。

@@ -279,17 +279,18 @@ button { cursor: pointer; touch-action: manipulation; }
 .log li.life { background: rgba(63,199,166,.09); }
 @keyframes logIn { from { opacity: 0; transform: translateX(-16px) scale(.97); } to { opacity: 1; transform: none; } }
 
-.paused-veil {
-  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; pointer-events: none;
-  font-family: var(--display); font-size: 28px; color: var(--ink); opacity: 0; transition: opacity .3s;
-  background: rgba(246,247,251,.25); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+.paused-chip {
+  position: fixed; z-index: 46; left: 50%; top: calc(64px + var(--safe-t));
+  transform: translate(-50%, -8px) scale(.9); opacity: 0; pointer-events: none;
+  padding: 6px 16px; border-radius: 999px; font-weight: 900; font-size: 13px; color: #fff;
+  background: rgba(29,36,51,.86); box-shadow: 0 8px 20px -8px rgba(29,36,51,.5);
+  transition: opacity .25s, transform .35s var(--ease-spring);
 }
-.paused-veil.on { opacity: 1; }
+.paused-chip.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
 
 /* ---------- イベントシート ---------- */
 .sheet-backdrop {
-  position: fixed; inset: 0; z-index: 40; background: rgba(30,38,60,.22);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  position: fixed; inset: 0; z-index: 40; background: rgba(30,38,60,.06); /* ぼかしなし */
   animation: fadeIn .3s ease both;
 }
 .sheet {
@@ -298,9 +299,11 @@ button { cursor: pointer; touch-action: manipulation; }
   padding: 10px 18px calc(22px + var(--safe-b));
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   transform: translateX(-50%);
+  background: linear-gradient(140deg, rgba(255,255,255,.97), rgba(255,255,255,.9));
   animation: sheetUp .6s var(--ease-spring) both;
 }
 .sheet.closing { animation: sheetDown .35s ease-in both; }
+.sheet-backdrop.closing { animation: fadeIn .3s reverse forwards; }
 @keyframes sheetUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
 @keyframes sheetDown { to { transform: translate(-50%, 105%); } }
 @keyframes fadeIn { from { opacity: 0; } }
@@ -315,7 +318,7 @@ button { cursor: pointer; touch-action: manipulation; }
   transition: transform .3s var(--ease-spring), opacity .3s, filter .3s;
   animation: choiceIn .5s var(--ease-spring) both;
 }
-.choice:nth-child(2) { animation-delay: .08s; } .choice:nth-child(3) { animation-delay: .16s; }
+.choice { animation-delay: var(--d, 0s); }
 @keyframes choiceIn { from { opacity: 0; transform: translateY(16px) scale(.96); } }
 .choice:active { transform: scale(.97); }
 .choice .num {
@@ -343,6 +346,7 @@ button { cursor: pointer; touch-action: manipulation; }
 }
 .bubble .who-ai { font-size: 11px; color: var(--sub); font-weight: 700; display: block; }
 .bubble .sk { height: 14px; margin-top: 6px; border-radius: 7px; }
+.name-step .label { font-weight: 700; font-size: 13px; color: var(--sub); display: block; margin-bottom: 6px; }
 .name-step { margin: 6px 0 14px; padding: 14px; border-radius: 20px; background: rgba(255,255,255,.6); border: 1px solid #fff; }
 .suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .suggest button { border: 1px solid #fff; background: rgba(255,255,255,.8); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
@@ -351,8 +355,15 @@ button { cursor: pointer; touch-action: manipulation; }
 #toast-root { position: fixed; z-index: 60; left: 0; right: 0; top: calc(12px + var(--safe-t)); display: grid; justify-items: center; gap: 8px; pointer-events: none; }
 .toast {
   padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px;
-  animation: toastIn .5s var(--ease-spring) both, toastOut .4s 2.6s ease-in forwards;
+  max-width: min(92vw, 520px); text-align: center; line-height: 1.5;
+  animation: toastIn .5s var(--ease-spring) both;
 }
+.toast.out { animation: toastOut .4s ease-in forwards; }
+.toast.theater { color: #6b3fa0; }
+.toast.tv { color: #1f6fd1; }
+.toast.race { color: #c42446; }
+.toast.life, .toast.army { color: #1f8a70; }
+.toast.end { color: #fff; background: linear-gradient(135deg, #2a3350, #1d2433); border: 0; }
 .toast.win { color: #fff; background: linear-gradient(135deg, var(--red), #ff7a59); border: 0; box-shadow: 0 12px 30px -10px rgba(239,61,95,.6); }
 @keyframes toastIn { from { transform: translateY(-30px) scale(.8); opacity: 0; } }
 @keyframes toastOut { to { transform: translateY(-20px); opacity: 0; } }
@@ -397,3 +408,89 @@ button { cursor: pointer; touch-action: manipulation; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .beam { animation: none; }
 }
+
+/* ---------- 選択結果のバッジ ---------- */
+.outcome {
+  display: inline-block; margin-bottom: 8px; padding: 4px 14px; border-radius: 999px;
+  font-family: var(--display); font-size: 16px; animation: outcomeIn .7s var(--ease-spring) both;
+}
+.outcome.great { color: #fff; background: linear-gradient(135deg, #ffb020, #ef3d5f); box-shadow: 0 10px 24px -10px rgba(239,61,95,.7); }
+.outcome.ok { color: #1f8a70; background: rgba(63,199,166,.16); }
+.outcome.fail { color: #687089; background: rgba(160,170,200,.22); }
+@keyframes outcomeIn { 0% { transform: scale(.3) rotate(-12deg); opacity: 0; } 60% { transform: scale(1.18) rotate(3deg); opacity: 1; } 100% { transform: none; } }
+
+/* ---------- 特別イベント（4年に1度） ---------- */
+.sp-stage { position: fixed; inset: 0; z-index: 40; pointer-events: auto; overflow: hidden; background: rgba(255,248,230,.18); animation: fadeIn .4s ease both; }
+.sp-stage.closing { animation: fadeIn .35s reverse forwards; }
+.sp-stage .curtain {
+  position: absolute; top: 0; bottom: 0; width: 52%;
+  background: repeating-linear-gradient(90deg, #c0203c 0 22px, #a3152f 22px 44px), #b71a35;
+  box-shadow: inset 0 -40px 60px rgba(0,0,0,.25);
+  animation: curtainOpen 1.4s .15s cubic-bezier(.7,0,.2,1) forwards;
+}
+.sp-stage .curtain.left { left: 0; transform-origin: left; }
+.sp-stage .curtain.right { right: 0; transform-origin: right; --dir: 1; }
+@keyframes curtainOpen {
+  0% { transform: translateX(0) scaleX(1); }
+  100% { transform: translateX(calc(-100% * (1 - 2 * var(--dir, 0)))) scaleX(.6); }
+}
+.sp-stage .spot {
+  position: absolute; top: -20vh; width: 60vmax; height: 140vh; left: 50%; margin-left: -30vmax;
+  background: radial-gradient(ellipse at top, rgba(255,236,170,.55), rgba(255,236,170,0) 60%);
+  transform-origin: top center; filter: blur(4px); mix-blend-mode: screen;
+  animation: spotSweep 3.2s ease-in-out infinite alternate;
+}
+.sp-stage .spot.s2 { animation-delay: -1.6s; background: radial-gradient(ellipse at top, rgba(200,226,255,.5), rgba(200,226,255,0) 60%); }
+@keyframes spotSweep { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+.sp-stage .sparkle { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.sheet.special {
+  top: 50%; bottom: auto; max-height: calc(100dvh - 90px - var(--safe-t) - var(--safe-b));
+  width: min(560px, calc(100% - 24px)); border-radius: 30px;
+  padding: 26px 20px 22px; z-index: 41;
+  background: linear-gradient(150deg, rgba(255,255,255,.98), rgba(255,250,236,.95));
+  border: 2px solid transparent;
+  box-shadow: 0 30px 80px -20px rgba(164,107,0,.55), 0 0 0 1px rgba(255,214,90,.5), inset 0 1px 0 #fff;
+  animation: specialIn 1.1s .9s var(--ease-spring) both;
+}
+.sheet.special::after {
+  inset: -2px; border-radius: inherit; padding: 2px;
+  background: conic-gradient(from var(--ang, 0deg), #ffd65a, #fff4c2, #ffb020, #ef3d5f, #ffd65a);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  box-shadow: none; animation: borderSpin 3s linear infinite;
+}
+@property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes borderSpin { to { --ang: 360deg; } }
+@keyframes specialIn {
+  0% { transform: translate(-50%, -50%) scale(.4) rotate(-6deg); opacity: 0; filter: blur(8px); }
+  60% { transform: translate(-50%, -50%) scale(1.04) rotate(1deg); opacity: 1; filter: none; }
+  100% { transform: translate(-50%, -50%); }
+}
+.sheet.special.closing { animation: specialOut .35s ease-in forwards; }
+@keyframes specialOut { to { transform: translate(-50%, -50%) scale(.85); opacity: 0; } }
+.sheet.special.flash { animation: specialIn 0s both, flash .7s ease-out; }
+@keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(255,214,90,.9), 0 30px 80px -20px rgba(164,107,0,.55); } 100% { box-shadow: 0 0 0 40px rgba(255,214,90,0), 0 30px 80px -20px rgba(164,107,0,.55); } }
+.sp-ribbon {
+  position: relative; margin: -8px auto 12px; width: fit-content; padding: 6px 18px; border-radius: 999px;
+  color: #fff; font-weight: 900; font-size: 13px; letter-spacing: .08em;
+  background: linear-gradient(110deg, #ffb020, #ef3d5f, #ffb020); background-size: 200% 100%;
+  box-shadow: 0 10px 24px -10px rgba(239,61,95,.7);
+  animation: ribbon 2.2s linear infinite, outcomeIn .8s 1.3s var(--ease-spring) both;
+}
+@keyframes ribbon { to { background-position: -200% 0; } }
+.sheet.special .ev-age { text-align: center; color: #a46b00; }
+.sp-title { text-align: center; font-size: 28px !important; }
+.sp-title span { display: inline-block; animation: letterDrop .7s calc(1.4s + var(--i) * .06s) var(--ease-spring) both; }
+@keyframes letterDrop { from { transform: translateY(-40px) rotate(-20deg) scale(1.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet.special .choice { animation-delay: calc(1.8s + var(--d, 0s)); border: 1px solid rgba(255,214,90,.6); }
+.sheet.special .choice .num { background: linear-gradient(135deg, #ffb020, #ef3d5f); }
+.sheet.special .choice:hover { box-shadow: 0 0 0 2px rgba(255,214,90,.8), var(--shadow); }
+
+/* ---------- 結果画像のプレビュー ---------- */
+.share-sheet h2 { margin: 0 0 4px; }
+.share-sheet img { display: block; width: min(100%, 320px); margin: 6px auto 14px; border-radius: 18px; box-shadow: var(--shadow); }
+a.btn { display: grid; place-items: center; text-decoration: none; }
+
+/* イベントのシートは背景をぼかさない（モザイクなし） */
+.sheet.glass { -webkit-backdrop-filter: none; backdrop-filter: none; }

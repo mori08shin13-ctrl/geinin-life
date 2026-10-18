@@ -13,7 +13,9 @@ const post = (p, body) => new Request('https://x' + p, { method: 'POST', body: J
 
 let r = await handleApi(post('/api/comment', { age: 20, title: 'テスト', choice: 'A', result: 'B', gender: 'male' }), env);
 assert.equal(r.status, 200);
-assert.equal((await r.json()).comment, 'いや、なんでやねん！');
+const cj = await r.json();
+assert.equal(cj.comment, 'いや、なんでやねん！');
+assert.ok(cj.persona, 'ツッコミ役の名前が返る');
 assert.deepEqual(calls, ['@cf/google/gemma-3-12b-it', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'], '失敗時は別モデルへフォールバック');
 
 r = await handleApi(post('/api/eulogy', { name: 'a', awards: ['M-1 優勝'], family: ['妻あり'] }), env);
