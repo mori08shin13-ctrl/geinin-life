@@ -8,12 +8,17 @@ const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const getPass = () => { try { return sessionStorage.getItem(KEY) || ''; } catch { return ''; } };
 const setPass = (v) => { try { v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY); } catch {} };
 
-async function call(method = 'GET', id) {
-  const res = await fetch(`/api/admin/feedback${id ? `?id=${id}` : ''}`, { method, headers: { authorization: `Bearer ${getPass()}` } });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(body.error || `エラー ${res.status}`), { status: res.status });
-  return body;
+async function request(path, { method = 'GET', body } = {}) {
+  const res = await fetch(path, {
+    method,
+    headers: { authorization: `Bearer ${getPass()}`, ...(body ? { 'content-type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || `エラー ${res.status}`), { status: res.status });
+  return data;
 }
+const call = (method = 'GET', id) => request(`/api/admin/feedback${id ? `?id=${id}` : ''}`, { method });
 
 function fmtDate(ms) {
   const d = new Date(ms);
@@ -30,9 +35,64 @@ function render(items) {
     </article>`).join('') : '<p class="admin-empty glass">まだご意見は届いていません。</p>';
 }
 
+// ---------- 殿堂入りランキングの管理（複数選んで削除） ----------
+const fmtMan = (man) => {
+  const v = Math.round(man); const oku = Math.floor(Math.abs(v) / 10000); const rest = Math.abs(v) % 10000;
+  return (v < 0 ? '-' : '') + (oku ? `${oku}億${rest ? rest.toLocaleString() + '万' : ''}円` : `${Math.abs(v).toLocaleString()}万円`);
+};
+function selectedIds() { return [...document.querySelectorAll('#hof-items input:checked')].map((c) => Number(c.value)); }
+function updateSelection() {
+  const ids = selectedIds(); const all = document.querySelectorAll('#hof-items input');
+  $('#hof-selected').textContent = `${ids.length}件選択中`;
+  const del = $('#hof-delete');
+  del.disabled = !ids.length; del.dataset.confirm = ''; del.textContent = ids.length ? `選択した${ids.length}件を削除` : '選択したものを削除';
+  $('#hof-all').checked = all.length > 0 && ids.length === all.length;
+  $('#hof-all').indeterminate = ids.length > 0 && ids.length < all.length;
+}
+function renderHof(items) {
+  $('#hof-total').textContent = `（${items.length}件）`;
+  $('#hof-items').innerHTML = items.length ? items.map((e, i) => `
+    <li class="glass" data-testid="hof-row">
+      <label>
+        <input type="checkbox" value="${e.id}" data-testid="hof-check">
+        <span class="rk">${i + 1}</span>
+        <span class="who">${esc(e.name)}<small>${esc(e.unit)}・${fmtMan(e.lifetime)}・🏆${e.awards}・軍団${e.army}人・享年${e.age}・${fmtDate(e.created_at)}</small></span>
+        <b>${Number(e.score).toLocaleString()}点</b>
+      </label>
+    </li>`).join('') : '<p class="admin-empty glass">ランキングはまだ空です。</p>';
+  updateSelection();
+}
+async function loadHof() { const { items } = await request('/api/admin/hof'); renderHof(items); }
+
+$('#hof-items').addEventListener('change', updateSelection);
+$('#hof-all').addEventListener('change', (e) => {
+  document.querySelectorAll('#hof-items input').forEach((c) => { c.checked = e.target.checked; });
+  updateSelection();
+});
+$('#hof-delete').addEventListener('click', async (e) => {
+  const ids = selectedIds();
+  if (!ids.length) return;
+  // 誤操作防止：1回目で確認、2回目で削除
+  if (e.target.dataset.confirm !== '1') { e.target.dataset.confirm = '1'; e.target.textContent = `本当に${ids.length}件を削除する（元に戻せません）`; return; }
+  e.target.disabled = true;
+  try {
+    const { items, deleted } = await request('/api/admin/hof', { method: 'POST', body: { ids } });
+    renderHof(items);
+    $('#hof-msg').textContent = `${deleted}件を削除しました。`;
+  } catch (err) { $('#hof-msg').textContent = err.message; e.target.disabled = false; }
+});
+document.querySelectorAll('.admin-tabs button').forEach((b) => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.admin-tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    const hof = b.dataset.tab === 'hof';
+    $('#items').hidden = hof; $('#hof').hidden = !hof;
+    $('#hof-msg').textContent = '';
+  });
+});
+
 async function load() {
   try {
-    const { items } = await call();
+    const [{ items }] = await Promise.all([call(), loadHof()]);
     $('#login').hidden = true; $('#list').hidden = false;
     render(items);
   } catch (e) {
@@ -50,7 +110,7 @@ $('#login form').addEventListener('submit', (e) => {
   load();
 });
 $('#reload').onclick = load;
-$('#logout').onclick = () => { setPass(''); $('#items').innerHTML = ''; $('#list').hidden = true; $('#login').hidden = false; $('#login-error').textContent = ''; };
+$('#logout').onclick = () => { setPass(''); $('#items').innerHTML = ''; $('#hof-items').innerHTML = ''; $('#list').hidden = true; $('#login').hidden = false; $('#login-error').textContent = ''; };
 $('#items').addEventListener('click', async (e) => {
   const item = e.target.closest('.fb-item');
   if (!item) return;

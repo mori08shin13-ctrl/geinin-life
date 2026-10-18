@@ -2,7 +2,7 @@
 //  UI（画面遷移・アニメーション・ゲームループ・通知・API連携）
 // ===============================================================
 import * as E from './engine.js';
-import { TIERS, COMBI_NAMES, TRIO_NAMES, FALLBACK_COMMENTS } from './data.js';
+import { TIERS, COMBI_NAMES, TRIO_NAMES, OKAN_LINES, TRIVIA } from './data.js';
 import { drawResultImage } from './share.js';
 
 const app = document.getElementById('app');
@@ -13,7 +13,7 @@ const params = new URLSearchParams(location.search);
 const TEST_TICK = Number(params.get('tick')) || 0; // テスト用の高速モード
 const SPEEDS = { slow: { label: 'ゆっくり', ms: 2400 }, normal: { label: 'ふつう', ms: 1200 }, fast: { label: 'はやい', ms: 400 } };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const PERSONAS = Object.keys(FALLBACK_COMMENTS);
+const TRIVIA_RATE = params.get('trivia') === '1' ? 1 : params.get('trivia') === '0' ? 0 : 0.3; // 豆知識が出る確率
 
 let S = null;          // ゲーム状態
 let timer = null;
@@ -528,7 +528,8 @@ function showResult(sheet, ev, res) {
       ${ev.special ? '' : `<div class="outcome ${ocls}" data-testid="outcome">${olabel}</div>`}
       <p>${esc(res.result)}</p>
       <div class="chips">${chips}</div>
-      <div class="bubble" data-testid="ai-comment"><span class="who-ai">AIツッコミ</span><div class="sk w80"></div><div class="sk w60"></div></div>
+      <div class="bubble okan" data-testid="ai-comment"><span class="who-ai">大阪のおかん（AI）</span><div class="sk w80"></div><div class="sk w60"></div></div>
+      ${Math.random() < TRIVIA_RATE ? `<div class="trivia" data-testid="trivia"><span class="t-head">💡 おかんの豆知識</span>${esc(triviaLine())}</div>` : ''}
       ${needName ? `<div class="name-step"><label class="label" for="unit-name">${S.unit.type === 'trio' ? 'トリオ' : 'コンビ'}名を決めよか</label>
         <input class="input" id="unit-name" maxlength="16" value="${esc(S.unit.name)}" data-testid="input-unit-name">
         <div class="suggest" data-for="unit-name">${suggestions.map((n) => `<button type="button" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>` : ''}
@@ -561,11 +562,20 @@ async function loadComment(sheet, ev, res) {
     }, 7000);
     text = (r.comment || '').trim(); persona = r.persona || '';
   } catch {}
-  if (!text) { persona = rnd(PERSONAS); text = rnd(FALLBACK_COMMENTS[persona]); }
+  if (!text) text = rnd(OKAN_LINES);
+  persona = '大阪のおかん';
   if (!bubble.isConnected) return;
-  bubble.innerHTML = `<span class="who-ai" data-testid="ai-persona">AIツッコミ：${esc(persona || 'ナレーター')}</span><span data-testid="ai-text"></span>`;
+  bubble.innerHTML = `<span class="who-ai" data-testid="ai-persona">${esc(persona)}（AI）</span><span data-testid="ai-text"></span>`;
   typeText(bubble.querySelector('[data-testid=ai-text]'), text);
 }
+// 豆知識はおかんの口調で（同じものが続かないよう順番に出す）
+let triviaBag = [];
+function triviaLine() {
+  if (!triviaBag.length) triviaBag = [...TRIVIA].sort(() => Math.random() - 0.5);
+  const fact = triviaBag.pop();
+  return `${rnd(['ちなみにな、', 'そういえばな、', 'あんた知ってる？', 'お母さん、テレビで見てん。'])}${fact}。${rnd(['知らんかったやろ？', 'ひとつ賢なったな。', '覚えときや。', 'お母さん物知りやろ？'])}`;
+}
+
 function typeText(el, text) {
   if (reduceMotion || TEST_TICK) { el.textContent = text; return; }
   let i = 0;

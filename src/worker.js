@@ -33,6 +33,14 @@ export class HallOfFame extends DurableObject {
     this.sql.exec('DELETE FROM hof_score WHERE id NOT IN (SELECT id FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 100)');
     return this.top();
   }
+  // 管理画面用：IDつきで全件（最大100件）
+  async listAll() {
+    return this.sql.exec('SELECT id, name, unit, score, lifetime, awards, army, age, created_at FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC').toArray();
+  }
+  async removeMany(ids) {
+    for (const id of ids) this.sql.exec('DELETE FROM hof_score WHERE id = ?', id);
+    return this.listAll();
+  }
   async top() {
     // 同点なら生涯年収が多い人、それも同じなら先に登録した人が上
     return this.sql.exec('SELECT name, unit, score, lifetime, awards, army, age FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 10').toArray();

@@ -15,7 +15,7 @@ let r = await handleApi(post('/api/comment', { age: 20, title: 'テスト', choi
 assert.equal(r.status, 200);
 const cj = await r.json();
 assert.equal(cj.comment, 'いや、なんでやねん！');
-assert.ok(cj.persona, 'ツッコミ役の名前が返る');
+assert.equal(cj.persona, '大阪のおかん', 'ツッコミ役は大阪のおかん');
 assert.deepEqual(calls, ['@cf/google/gemma-3-12b-it', '@cf/meta/llama-3.3-70b-instruct-fp8-fast'], '失敗時は別モデルへフォールバック');
 
 r = await handleApi(post('/api/eulogy', { name: 'a', awards: ['M-1 優勝'], family: ['妻あり'] }), env);
@@ -63,4 +63,16 @@ const items = (await r.json()).items; assert.equal(items.length, 3); assert.ok(!
 r = await handleApi(new Request(`https://x/api/admin/feedback?id=${items[0].id}`, { method: 'DELETE', headers: { authorization: 'Bearer kanri-pass-123' } }), env2);
 assert.equal(r.status, 200); assert.equal(fb.length, 2);
 r = await handleApi(get({ authorization: 'Bearer anything' }), { ...env2, ADMIN_PASSWORD: '' }); assert.equal(r.status, 503, 'パスワード未設定なら誰も読めない');
+// ---- 管理画面：殿堂入りの複数削除 ----
+let hofRows = [{ id: 1, name: 'A', score: 900 }, { id: 2, name: 'B', score: 800 }, { id: 3, name: 'C', score: 700 }];
+const hofStub = { listAll: async () => hofRows, removeMany: async (ids) => { hofRows = hofRows.filter((x) => !ids.includes(x.id)); return hofRows; } };
+const env3 = { ...env2, HOF: { idFromName: () => 'id', get: () => hofStub } };
+const adm = (body) => new Request('https://x/api/admin/hof', body ? { method: 'POST', body: JSON.stringify(body), headers: { authorization: 'Bearer kanri-pass-123', 'content-type': 'application/json' } } : { headers: { authorization: 'Bearer kanri-pass-123' } });
+r = await handleApi(new Request('https://x/api/admin/hof'), env3); assert.equal(r.status, 401, 'パスワードなしは一覧も見られない');
+r = await handleApi(new Request('https://x/api/admin/hof', { method: 'POST', body: JSON.stringify({ ids: [1] }), headers: { authorization: 'Bearer nope' } }), env3);
+assert.equal(r.status, 401, 'パスワードなしは削除できない'); assert.equal(hofRows.length, 3);
+r = await handleApi(adm(), env3); assert.equal((await r.json()).items.length, 3);
+r = await handleApi(adm({ ids: [] }), env3); assert.equal(r.status, 400, '選択なしは削除しない');
+r = await handleApi(adm({ ids: [1, '3', 3, 'x', -5] }), env3);
+const del = await r.json(); assert.equal(del.deleted, 2); assert.deepEqual(del.items.map((x) => x.name), ['B']);
 console.log('api tests: all passed');

@@ -28,13 +28,26 @@
     </section>
     <section class="screen" id="list" data-testid="admin-list" hidden>
       <div class="admin-head">
-        <h1>ご意見・ご要望 <span id="total" data-testid="admin-total"></span></h1>
+        <h1>管理画面</h1>
         <div class="admin-tools">
           <button class="btn glass" id="reload" type="button">更新</button>
           <button class="btn glass" id="logout" type="button">ログアウト</button>
         </div>
       </div>
+      <div class="seg admin-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="feedback" aria-pressed="true" data-testid="tab-feedback">ご意見 <span id="total" data-testid="admin-total"></span></button>
+        <button type="button" role="tab" data-tab="hof" aria-pressed="false" data-testid="tab-hof">殿堂入り <span id="hof-total"></span></button>
+      </div>
       <div id="items" data-testid="admin-items"></div>
+      <div id="hof" data-testid="admin-hof" hidden>
+        <div class="hof-bar glass">
+          <label class="check-all"><input type="checkbox" id="hof-all" data-testid="hof-select-all"> すべて選択</label>
+          <span id="hof-selected" data-testid="hof-selected">0件選択中</span>
+          <button class="btn primary danger-btn" id="hof-delete" type="button" disabled data-testid="hof-delete">選択したものを削除</button>
+        </div>
+        <p class="hint" id="hof-msg" role="status" data-testid="hof-msg"></p>
+        <ol class="admin-hof-list" id="hof-items" data-testid="hof-items"></ol>
+      </div>
     </section>
   </main>
   <div id="toast-root" aria-live="assertive"></div>

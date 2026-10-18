@@ -37,6 +37,7 @@ def serve():
 
 HOF = []
 FEEDBACK = []
+ADMIN_HOF = []
 
 
 def mock_api(page, ai_ok=True, comment="AIのツッコミやで！"):
@@ -61,6 +62,14 @@ def mock_api(page, ai_ok=True, comment="AIのツッコミやで！"):
                 return route.fulfill(json={"ok": True})
             items = [{"id": i + 1, "created_at": 1760000000000, **f} for i, f in enumerate(FEEDBACK)]
             return route.fulfill(json={"items": items})
+        if path.startswith("admin/hof"):
+            if req.headers.get("authorization") != "Bearer test-pass":
+                return route.fulfill(status=401, json={"error": "パスワードが違います"})
+            if req.method == "POST":
+                ids = json.loads(req.post_data)["ids"]
+                ADMIN_HOF[:] = [e for e in ADMIN_HOF if e["id"] not in ids]
+                return route.fulfill(json={"items": ADMIN_HOF, "deleted": len(ids)})
+            return route.fulfill(json={"items": ADMIN_HOF})
         if path == "hof":
             if req.method == "POST":
                 d = json.loads(req.post_data)
@@ -283,6 +292,8 @@ def test_no_mosaic_on_pause_and_event(browser, base, device):
 def test_admin_page(browser, base, device):
     FEEDBACK[:] = [{"text": "テンポがちょうどいい！", "name": "森", "unit": "たこ焼き銀河", "age": 84},
                    {"text": "<script>alert(1)</script> もっとイベントを", "name": "浪花", "unit": "ピン", "age": 77}]
+    ADMIN_HOF[:] = [{"id": i + 1, "name": n, "unit": "テスト", "score": 1000 - i * 100, "lifetime": 50000, "awards": 1, "army": 3, "age": 80,
+                     "created_at": 1760000000000} for i, n in enumerate(["一位", "二位", "三位", "四位"])]
     ctx = browser.new_context(**device)
     page = ctx.new_page()
     mock_api(page)
@@ -300,6 +311,27 @@ def test_admin_page(browser, base, device):
     page.get_by_test_id("admin-item").first.locator(".del").click()
     page.get_by_test_id("admin-item").first.locator(".del").click()
     expect(page.get_by_test_id("admin-item")).to_have_count(1)
+    # 殿堂入りランキングを複数選んで削除
+    page.get_by_test_id("tab-hof").click()
+    expect(page.get_by_test_id("admin-hof")).to_be_visible()
+    rows = page.get_by_test_id("hof-row")
+    expect(rows).to_have_count(4)
+    expect(page.get_by_test_id("hof-delete")).to_be_disabled()
+    page.get_by_test_id("hof-select-all").check()
+    expect(page.get_by_test_id("hof-selected")).to_have_text("4件選択中")
+    page.get_by_test_id("hof-select-all").uncheck()
+    expect(page.get_by_test_id("hof-selected")).to_have_text("0件選択中")
+    rows.nth(0).get_by_test_id("hof-check").check()
+    rows.nth(2).get_by_test_id("hof-check").check()
+    expect(page.get_by_test_id("hof-selected")).to_have_text("2件選択中")
+    page.get_by_test_id("hof-delete").click()
+    expect(page.get_by_test_id("hof-delete")).to_contain_text("本当に2件")
+    assert len(ADMIN_HOF) == 4, "1回目のクリックでは消えない"
+    page.get_by_test_id("hof-delete").click()
+    expect(page.get_by_test_id("hof-msg")).to_contain_text("2件を削除しました")
+    expect(rows).to_have_count(2)
+    assert [e["name"] for e in ADMIN_HOF] == ["二位", "四位"], ADMIN_HOF
+    page.screenshot(path=os.path.join(OUT, f"admin-hof-{device.get('is_mobile', False)}.png"))
     ctx.close()
 
 
@@ -335,7 +367,25 @@ def test_ai_comment_persona_and_fallback(browser, base, device):
     start_new_game(page, base, extra="&ai=1")
     page.get_by_test_id("choice-0").click()
     expect(page.get_by_test_id("ai-text")).not_to_be_empty(timeout=10000)
-    expect(page.get_by_test_id("ai-persona")).to_contain_text("AIツッコミ：")
+    expect(page.get_by_test_id("ai-persona")).to_contain_text("大阪のおかん")
+    ctx.close()
+    # 豆知識（テストでは必ず出す設定）
+    ctx = browser.new_context(**device)
+    page = ctx.new_page()
+    mock_api(page)
+    start_new_game(page, base, extra="&trivia=1")
+    page.get_by_test_id("choice-1").click()
+    expect(page.get_by_test_id("trivia")).to_be_visible()
+    expect(page.get_by_test_id("trivia")).to_contain_text("おかんの豆知識")
+    ctx.close()
+    # 豆知識を出さない設定のときは出ない
+    ctx = browser.new_context(**device)
+    page = ctx.new_page()
+    mock_api(page)
+    start_new_game(page, base, extra="&trivia=0")
+    page.get_by_test_id("choice-1").click()
+    expect(page.get_by_test_id("event-result")).to_be_visible()
+    expect(page.get_by_test_id("trivia")).to_have_count(0)
     ctx.close()
 
 

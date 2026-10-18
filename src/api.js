@@ -55,31 +55,23 @@ export function cleanText(t) {
     .slice(0, 600);
 }
 
-// ツッコミ役のキャラクター（毎回ランダム）
-export const PERSONAS = [
-  { name: '劇場の先輩芸人', style: '面倒見のいい先輩芸人として、愛のあるダメ出し' },
-  { name: '大阪のおかん', style: '世話焼きの大阪のおかんとして、心配しつつ笑い飛ばす' },
-  { name: 'NSCの鬼講師', style: '厳しいNSCの講師として、短く鋭く' },
-  { name: '劇場の支配人', style: 'ベテランの劇場支配人として、ちょっと皮肉まじりに' },
-  { name: '常連のおっちゃん', style: '劇場に毎日来る常連のおっちゃんとして、なれなれしく' },
-  { name: '番組プロデューサー', style: 'テレビのプロデューサーとして、数字の話をからめて' },
-  { name: '未来の自分', style: '80歳になった未来の自分として、しみじみと' },
-  { name: '相方', style: '長年の相方として、遠慮なくどつくように' },
-  { name: '近所の小学生', style: '近所の生意気な小学生として、素直すぎる一言' },
-  { name: '実況アナウンサー', style: 'スポーツ実況のアナウンサーとして、大げさに盛り上げて' },
-  { name: '占い師', style: 'よく当たると評判の占い師として、意味ありげに' },
-  { name: '居酒屋の大将', style: '行きつけの居酒屋の大将として、人情味たっぷりに' },
-];
+// ツッコミ役は「大阪のおかん」
+export const OKAN = `あなたは大阪の下町に住む、世話焼きで口うるさいけど愛情たっぷりの「大阪のおかん」です。
+芸人をやっている我が子の一年を見守って、ひとこと声をかけます。
+・こてこての関西弁（〜やで、〜しいや、〜やんか、ほんまに、あんた、なんでやねん）
+・おかんらしい心配や小言、ツッコミを混ぜる（ちゃんとご飯食べてるか、風邪ひかんときや、飴ちゃんあげよか、近所に自慢しとくわ、など）
+・最後はあたたかく背中を押す`;
 
 async function comment(req, env) {
   const b = await req.json().catch(() => ({}));
-  const persona = PERSONAS[Math.floor(Math.random() * PERSONAS.length)];
-  const prompt = `お笑い芸人人生ゲームの実況です。プレイヤーは${clip(b.age, 3)}歳の${clip(b.gender, 6) === 'female' ? '女性' : '男性'}芸人（${clip(b.unitType, 10)}・ランク「${clip(b.tier, 12)}」）。
-今年のイベント「${clip(b.title, 40)}」で「${clip(b.choice, 60)}」を選び、結果は「${clip(b.result, 160)}」。
-結果は「${clip(b.outcome, 6) === 'great' ? '大成功' : clip(b.outcome, 6) === 'fail' ? '失敗' : 'ふつう'}」でした。
-あなたは${persona.style}ツッコミを入れます。関西弁で40文字以内の一言だけ答えてください。`;
-  const text = await runAI(env, prompt, 80);
-  return json({ comment: text.split('\n')[0].slice(0, 80), persona: persona.name });
+  const outcome = clip(b.outcome, 6) === 'great' ? '大成功' : clip(b.outcome, 6) === 'fail' ? '失敗' : 'ふつう';
+  const prompt = `${OKAN}
+
+我が子の状況：${clip(b.age, 3)}歳の${clip(b.gender, 6) === 'female' ? '娘' : '息子'}。芸人として「${clip(b.unitType, 10)}」、ランクは「${clip(b.tier, 12)}」。
+今年の出来事「${clip(b.title, 40)}」で「${clip(b.choice, 60)}」を選び、結果は${outcome}。「${clip(b.result, 160)}」
+この子に、大阪のおかんとして50文字以内のひとことを関西弁で言ってください。`;
+  const text = await runAI(env, prompt, 100);
+  return json({ comment: text.split('\n')[0].slice(0, 90), persona: '大阪のおかん' });
 }
 
 async function eulogy(req, env) {
@@ -174,12 +166,28 @@ async function adminFeedback(req, env) {
   return json({ items: await box.list() });
 }
 
+// 管理画面：殿堂入りランキングの一覧と、選んだものの削除
+async function adminHof(req, env) {
+  if (!env.ADMIN_PASSWORD) return json({ error: '管理者パスワードがまだ設定されていません' }, 503);
+  if (!(await isAdmin(req, env))) return json({ error: 'パスワードが違います' }, 401);
+  if (!env.HOF) return json({ items: [] });
+  const stub = env.HOF.get(env.HOF.idFromName('global'));
+  if (req.method === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    const ids = Array.isArray(b.ids) ? [...new Set(b.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 200) : [];
+    if (!ids.length) return json({ error: '削除するものを選んでください' }, 400);
+    return json({ items: await stub.removeMany(ids), deleted: ids.length });
+  }
+  return json({ items: await stub.listAll() });
+}
+
 export async function handleApi(req, env) {
   const { pathname } = new URL(req.url);
   try {
     if (pathname === '/api/health') return json({ ok: true, ai: !!env.AI, hof: !!env.HOF, feedback: !!env.FEEDBACK, admin: !!env.ADMIN_PASSWORD });
     if (pathname === '/api/feedback' && req.method === 'POST') return await feedback(req, env);
     if (pathname === '/api/admin/feedback') return await adminFeedback(req, env);
+    if (pathname === '/api/admin/hof') return await adminHof(req, env);
     if (pathname === '/api/comment' && req.method === 'POST') return await comment(req, env);
     if (pathname === '/api/eulogy' && req.method === 'POST') return await eulogy(req, env);
     if (pathname === '/api/hof') return await hof(req, env);
