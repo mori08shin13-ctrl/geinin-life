@@ -603,7 +603,7 @@ async function submitHof(root, r) {
   slot.innerHTML = hofListHTML(list, r.name);
 }
 function hofListHTML(list, me) {
-  if (!list) return '<p class="empty">ランキングサーバーにつながらへんかった。ネット環境を確認してな。</p>';
+  if (!list) return '<p class="empty">ランキングはCloudflareで公開した版でだけ使えるで。</p>';
   if (!list.length) return '<p class="empty">まだ誰も殿堂入りしてへん。一番乗りや！</p>';
   return `<ol class="hof-list" data-testid="hof-list">${list.map((e, i) => `<li${e.name === me ? ' style="box-shadow:0 0 0 2px var(--spot)"' : ''}>
     <span class="rk">${i + 1}</span><span>${esc(e.name)}<small>${esc(e.unit)}・🏆${e.awards}・軍団${e.army}人</small></span><span class="mny">${E.formatMan(e.lifetime)}</span></li>`).join('')}</ol>`;
@@ -612,10 +612,10 @@ function hofListHTML(list, me) {
 async function share(r) {
   const text = `【芸人人生】${r.name}（${r.unit}）は80歳で大往生。\n生涯年収：${E.formatMan(r.lifetime)}\n賞レース優勝：${r.awards.length ? r.awards.map((a) => a.race).join('・') : 'なし'}\n家族：${r.family.join('・')}\n出演作品：${r.tvCount}本\n${r.army.formed ? `${r.army.name}：${r.army.members.length}人` : ''}`;
   try {
-    if (navigator.share) { await navigator.share({ title: '芸人人生', text, url: location.origin }); return; }
-    await navigator.clipboard.writeText(`${text}\n${location.origin}`);
-    toast('結果をコピーしたで！');
-  } catch { /* キャンセル */ }
+    if (navigator.share) { await navigator.share({ title: '芸人人生', text }); return; }
+  } catch (e) { if (e?.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('結果をコピーしたで！'); }
+  catch { toast('コピーできへんかった。画面を長押しして選択してな'); }
 }
 
 // =================================================================
