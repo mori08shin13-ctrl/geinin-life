@@ -548,3 +548,22 @@ a.btn { display: grid; place-items: center; text-decoration: none; }
 .admin-hof-list .who { min-width: 0; overflow-wrap: anywhere; }
 .admin-hof-list small { display: block; color: var(--sub); font-size: 11px; }
 .admin-hof-list li:has(input:checked) { box-shadow: 0 0 0 2px var(--red), var(--shadow); }
+
+/* ---------- ランキングのタブ ---------- */
+.rank-tabs {
+  display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  margin: 0 -4px 10px; padding: 4px; scroll-snap-type: x proximity;
+}
+.rank-tabs::-webkit-scrollbar { display: none; }
+.rank-tabs button {
+  flex: 0 0 auto; scroll-snap-align: start; border: 1px solid #fff; border-radius: 999px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--sub);
+  background: rgba(255,255,255,.6); transition: background .25s, color .25s, transform .3s var(--ease-spring), box-shadow .25s;
+}
+.rank-tabs button:active { transform: scale(.94); }
+.rank-tabs button[aria-selected="true"] { color: #fff; background: linear-gradient(135deg, #2a3350, #1d2433); box-shadow: 0 8px 18px -8px rgba(29,36,51,.6); }
+.hof-list.swap li { animation: logIn .45s var(--ease-spring) both; }
+.hof-list.swap li:nth-child(2) { animation-delay: .03s; } .hof-list.swap li:nth-child(3) { animation-delay: .06s; }
+.hof-list.swap li:nth-child(4) { animation-delay: .09s; } .hof-list.swap li:nth-child(5) { animation-delay: .12s; }
+.hof-list li.top1 .rk { color: #d4a017; } .hof-list li.top2 .rk { color: #9aa3b8; } .hof-list li.top3 .rk { color: #c07a3e; }
+.hof-list li[data-me] { box-shadow: 0 0 0 2px var(--spot); }

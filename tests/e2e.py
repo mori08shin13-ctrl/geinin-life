@@ -76,9 +76,13 @@ def mock_api(page, ai_ok=True, comment="AIのツッコミやで！"):
                 assert "tier" in d and "tvCount" in d and isinstance(d["awards"], list), d
                 d["score"] = d["lifetime"] // 1000 + len(d["awards"]) * 100
                 d["awards"] = len(d["awards"])
+                d["tv"] = d["tvCount"]
                 HOF.append(d)
-            top = sorted(HOF, key=lambda e: (-e["score"], -e["lifetime"]))[:10]
-            return route.fulfill(json={"top": top})
+                sort = "score"
+            else:
+                sort = req.url.split("sort=")[1].split("&")[0] if "sort=" in req.url else "score"
+            top = sorted(HOF, key=lambda e: (-e[sort], -e["score"]))[:10]
+            return route.fulfill(json={"top": top, "sort": sort})
         return route.fulfill(status=404, body="{}")
 
     page.route("**/api/**", handle)
@@ -332,6 +336,38 @@ def test_admin_page(browser, base, device):
     expect(rows).to_have_count(2)
     assert [e["name"] for e in ADMIN_HOF] == ["二位", "四位"], ADMIN_HOF
     page.screenshot(path=os.path.join(OUT, f"admin-hof-{device.get('is_mobile', False)}.png"))
+    ctx.close()
+
+
+def test_ranking_tabs(browser, base, device):
+    HOF[:] = [
+        {"name": "スコア王", "unit": "A", "score": 1300, "lifetime": 200000, "awards": 2, "army": 10, "age": 80, "tv": 20},
+        {"name": "お金持ち", "unit": "B", "score": 900, "lifetime": 390000, "awards": 0, "army": 0, "age": 70, "tv": 10},
+        {"name": "優勝マニア", "unit": "C", "score": 1000, "lifetime": 100000, "awards": 6, "army": 2, "age": 66, "tv": 5},
+        {"name": "軍団長", "unit": "D", "score": 800, "lifetime": 90000, "awards": 1, "army": 30, "age": 75, "tv": 8},
+        {"name": "百寿", "unit": "E", "score": 700, "lifetime": 50000, "awards": 0, "army": 1, "age": 100, "tv": 3},
+        {"name": "テレビっ子", "unit": "F", "score": 950, "lifetime": 150000, "awards": 1, "army": 5, "age": 82, "tv": 39},
+    ]
+    ctx = browser.new_context(**device)
+    page = ctx.new_page()
+    mock_api(page)
+    page.goto(f"{base}/?tick={TICK}")
+    expect(page.get_by_test_id("btn-hof")).to_have_text("ランキングを見る")
+    page.get_by_test_id("btn-hof").click()
+    expect(page.get_by_test_id("hof-screen")).to_be_visible()
+    expect(page.get_by_test_id("rank-tab-score")).to_have_attribute("aria-selected", "true")
+    cases = [("score", "スコア王", "1,300点"), ("lifetime", "お金持ち", "39億円"), ("awards", "優勝マニア", "6回"),
+             ("army", "軍団長", "30人"), ("age", "百寿", "100歳"), ("tv", "テレビっ子", "39本")]
+    for key, first, value in cases:
+        page.get_by_test_id(f"rank-tab-{key}").click()
+        expect(page.get_by_test_id(f"rank-tab-{key}")).to_have_attribute("aria-selected", "true")
+        expect(page.locator(f'[data-testid=hof-list][data-sort="{key}"]')).to_be_visible()
+        row = page.get_by_test_id("hof-list").locator("li").first
+        expect(row).to_contain_text(first)
+        expect(row.get_by_test_id("hof-score")).to_have_text(value)
+    sw = page.evaluate("document.documentElement.scrollWidth"); vw = page.evaluate("innerWidth")
+    assert sw <= vw, f"横スクロール {sw}>{vw}"
+    page.screenshot(path=os.path.join(OUT, f"ranking-{device.get('is_mobile', False)}.png"))
     ctx.close()
 
 

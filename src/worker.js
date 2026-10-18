@@ -25,25 +25,30 @@ export class HallOfFame extends DurableObject {
       name TEXT, unit TEXT, score INTEGER, lifetime INTEGER, awards INTEGER, army INTEGER, age INTEGER, gender TEXT,
       created_at INTEGER
     )`);
+    // 出演テレビ本数の列を追加（なければ）
+    const cols = this.sql.exec('PRAGMA table_info(hof_score)').toArray().map((c) => c.name);
+    if (!cols.includes('tv')) this.sql.exec('ALTER TABLE hof_score ADD COLUMN tv INTEGER DEFAULT 0');
   }
   async add(e) {
-    this.sql.exec('INSERT INTO hof_score (name, unit, score, lifetime, awards, army, age, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      e.name, e.unit, e.score, e.lifetime, e.awards, e.army, e.age, e.gender, Date.now());
-    // 上位100件だけ残す
-    this.sql.exec('DELETE FROM hof_score WHERE id NOT IN (SELECT id FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 100)');
-    return this.top();
+    this.sql.exec('INSERT INTO hof_score (name, unit, score, lifetime, awards, army, age, tv, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      e.name, e.unit, e.score, e.lifetime, e.awards, e.army, e.age, e.tv, e.gender, Date.now());
+    // 保存は最大2000件（項目別ランキングの上位が消えないよう、古くて低いものから整理）
+    this.sql.exec('DELETE FROM hof_score WHERE id NOT IN (SELECT id FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 2000)');
+    return this.top('score');
   }
   // 管理画面用：IDつきで全件（最大100件）
   async listAll() {
-    return this.sql.exec('SELECT id, name, unit, score, lifetime, awards, army, age, created_at FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC').toArray();
+    return this.sql.exec('SELECT id, name, unit, score, lifetime, awards, army, age, tv, created_at FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 500').toArray();
   }
   async removeMany(ids) {
     for (const id of ids) this.sql.exec('DELETE FROM hof_score WHERE id = ?', id);
     return this.listAll();
   }
-  async top() {
-    // 同点なら生涯年収が多い人、それも同じなら先に登録した人が上
-    return this.sql.exec('SELECT name, unit, score, lifetime, awards, army, age FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 10').toArray();
+  // sort: score(芸人スコア) / lifetime(生涯年収) / awards(優勝回数) / army(軍団) / age(長生き) / tv(出演本数)
+  async top(sort = 'score') {
+    const col = ['score', 'lifetime', 'awards', 'army', 'age', 'tv'].includes(sort) ? sort : 'score';
+    // 同じ値なら芸人スコア、それも同じなら先に登録した人が上
+    return this.sql.exec(`SELECT name, unit, score, lifetime, awards, army, age, tv FROM hof_score ORDER BY ${col} DESC, score DESC, id ASC LIMIT 10`).toArray();
   }
 }
 

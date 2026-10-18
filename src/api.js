@@ -106,11 +106,13 @@ async function hof(req, env) {
       awards: awards.length,
       army: Math.max(0, Math.min(50, Number(b.army) | 0)),
       age: Math.max(0, Math.min(100, Number(b.age) | 0)),
+      tv: Math.max(0, Math.min(60, Number(b.tvCount) | 0)),
       gender: b.gender === 'female' ? 'female' : 'male',
     };
-    return json({ top: await stub.add(entry) });
+    return json({ top: await stub.add(entry), sort: 'score' });
   }
-  return json({ top: await stub.top() });
+  const sort = new URL(req.url).searchParams.get('sort') || 'score';
+  return json({ top: await stub.top(sort), sort });
 }
 
 // ---------- ご意見・ご要望（管理者だけが読める） ----------

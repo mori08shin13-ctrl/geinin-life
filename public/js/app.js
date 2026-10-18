@@ -208,7 +208,7 @@ function titleScreen() {
         <div class="stack">
           <button class="btn primary" data-testid="btn-new">新しい人生をはじめる</button>
           ${saved && !saved.finished ? `<button class="btn glass" data-testid="btn-continue">つづきから（${E.age(saved)}歳・${esc(saved.name)}）</button>` : ''}
-          <button class="btn glass" data-testid="btn-hof">殿堂入りランキングを見る</button>
+          <button class="btn glass" data-testid="btn-hof">ランキングを見る</button>
         </div>
       </div>`,
     mount: (root) => {
@@ -681,7 +681,8 @@ function resultScreen() {
         </form>
 
         <div class="r-card glass" style="animation-delay:.3s" data-testid="result-hof">
-          <h3><span class="ic">👑</span>殿堂入りランキング（芸人スコア）</h3>
+          <h3><span class="ic">👑</span>ランキング</h3>
+          ${rankTabsHTML('score')}
           <div data-slot="hof"><div class="sk sk-row"></div></div>
         </div>
 
@@ -771,6 +772,47 @@ function openSharePreview(blob) {
   sheetRoot.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => { sheetRoot.innerHTML = ''; URL.revokeObjectURL(url); }; });
 }
 
+// ---------- ランキング（項目別にタブで切り替え） ----------
+const RANKS = [
+  { key: 'score', label: '芸人スコア', value: (e) => `${Number(e.score).toLocaleString()}点` },
+  { key: 'lifetime', label: '生涯年収', value: (e) => E.formatMan(e.lifetime) },
+  { key: 'awards', label: '優勝回数', value: (e) => `${e.awards}回` },
+  { key: 'army', label: '軍団メンバー', value: (e) => `${e.army}人` },
+  { key: 'age', label: '長生き', value: (e) => `${e.age}歳` },
+  { key: 'tv', label: '出演テレビ', value: (e) => `${e.tv ?? 0}本` },
+];
+function rankTabsHTML(active) {
+  return `<div class="rank-tabs" role="tablist" data-testid="rank-tabs">${RANKS.map((r) => `<button type="button" role="tab" data-sort="${r.key}" aria-selected="${r.key === active}" data-testid="rank-tab-${r.key}">${r.label}</button>`).join('')}</div>`;
+}
+function hofListHTML(list, me, sort = 'score') {
+  if (!list) return '<p class="empty">ランキングはCloudflareで公開した版でだけ使えるで。</p>';
+  if (!list.length) return '<p class="empty">まだ誰も載ってへん。一番乗りや！</p>';
+  const def = RANKS.find((r) => r.key === sort) || RANKS[0];
+  return `<ol class="hof-list" data-testid="hof-list" data-sort="${def.key}">${list.map((e, i) => `<li class="${i < 3 ? `top${i + 1}` : ''}"${e.name === me ? ' data-me="1"' : ''}>
+    <span class="rk">${i + 1}</span><span>${esc(e.name)}<small>${esc(e.unit)}・芸人スコア${Number(e.score).toLocaleString()}点・${E.formatMan(e.lifetime)}・🏆${e.awards}・軍団${e.army}人・享年${e.age}・出演${e.tv ?? 0}本</small></span><span class="mny" data-testid="hof-score">${def.value(e)}</span></li>`).join('')}</ol>`;
+}
+// タブを押すとその項目で並び替えたランキングを読み込む
+function wireRankTabs(root, slot, me, first) {
+  const cache = first ? { score: first } : {};
+  const show = async (sort) => {
+    root.querySelectorAll('[data-sort]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.sort === sort)));
+    root.querySelector(`[data-sort="${sort}"]`)?.scrollIntoView?.({ inline: 'nearest', block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+    if (!(sort in cache)) {
+      slot.innerHTML = '<div class="sk sk-row"></div><div class="sk sk-row"></div>';
+      try { cache[sort] = (await api(`/api/hof?sort=${sort}`)).top; } catch { cache[sort] = null; }
+    }
+    if (root.querySelector(`[data-sort="${sort}"]`)?.getAttribute('aria-selected') === 'true') {
+      slot.innerHTML = hofListHTML(cache[sort], me, sort);
+      slot.firstElementChild?.classList.add('swap');
+    }
+  };
+  root.querySelector('[data-testid=rank-tabs]').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-sort]');
+    if (b) show(b.dataset.sort);
+  });
+  return show;
+}
+
 async function submitHof(root, r) {
   const slot = root.querySelector('[data-slot=hof]');
   let list = null;
@@ -781,29 +823,28 @@ async function submitHof(root, r) {
       list = res.top;
     } else list = (await api('/api/hof')).top;
   } catch {}
-  slot.innerHTML = hofListHTML(list, r.name);
-}
-function hofListHTML(list, me) {
-  if (!list) return '<p class="empty">ランキングはCloudflareで公開した版でだけ使えるで。</p>';
-  if (!list.length) return '<p class="empty">まだ誰も殿堂入りしてへん。一番乗りや！</p>';
-  return `<ol class="hof-list" data-testid="hof-list">${list.map((e, i) => `<li${e.name === me ? ' style="box-shadow:0 0 0 2px var(--spot)"' : ''}>
-    <span class="rk">${i + 1}</span><span>${esc(e.name)}<small>${esc(e.unit)}・${E.formatMan(e.lifetime)}・🏆${e.awards}・軍団${e.army}人・享年${e.age}</small></span><span class="mny" data-testid="hof-score">${Number(e.score).toLocaleString()}点</span></li>`).join('')}</ol>`;
+  const show = wireRankTabs(root.querySelector('[data-testid=result-hof]'), slot, r.name, list);
+  show('score');
 }
 
 // =================================================================
-//  殿堂入り画面
+//  ランキング画面
 // =================================================================
 function hofScreen() {
   let list = null;
   go({
-    prepare: async () => { try { list = (await api('/api/hof')).top; } catch {} },
+    prepare: async () => { try { list = (await api('/api/hof?sort=score')).top; } catch {} },
     html: () => `
       <div class="r-card glass" data-testid="hof-screen">
-        <h3><span class="ic">👑</span>殿堂入りランキング（芸人スコア）</h3>
-        ${hofListHTML(list, '')}
+        <h3><span class="ic">👑</span>ランキング</h3>
+        ${rankTabsHTML('score')}
+        <div data-slot="hof">${hofListHTML(list, '', 'score')}</div>
       </div>
       <button class="btn glass" data-testid="btn-back">もどる</button>`,
-    mount: (root) => { root.querySelector('[data-testid=btn-back]').onclick = titleScreen; },
+    mount: (root) => {
+      root.querySelector('[data-testid=btn-back]').onclick = titleScreen;
+      wireRankTabs(root, root.querySelector('[data-slot=hof]'), '', list);
+    },
   }, { skeleton: 'result', minMs: 400 });
 }
 

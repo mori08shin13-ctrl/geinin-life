@@ -34,6 +34,7 @@ assert.equal(sc.parts.length, 7);
 r = await handleApi(post('/api/comment', {}), { });
 assert.equal(r.status, 503, 'AIがない環境では503（フロントが代替文言を使う）');
 
+r = await handleApi(new Request('https://x/api/hof?sort=army'), env); assert.equal((await r.json()).sort, 'army', '項目別ランキング');
 r = await handleApi(new Request('https://x/api/nope'), env); assert.equal(r.status, 404);
 assert.equal(cleanText('<b>**「やるやん」**</b>'), 'やるやん');
 assert.equal(cleanText('森-san、お疲れ'), '森さん、お疲れ');

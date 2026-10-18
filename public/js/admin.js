@@ -35,7 +35,7 @@ function render(items) {
     </article>`).join('') : '<p class="admin-empty glass">まだご意見は届いていません。</p>';
 }
 
-// ---------- 殿堂入りランキングの管理（複数選んで削除） ----------
+// ---------- ランキングの管理（複数選んで削除） ----------
 const fmtMan = (man) => {
   const v = Math.round(man); const oku = Math.floor(Math.abs(v) / 10000); const rest = Math.abs(v) % 10000;
   return (v < 0 ? '-' : '') + (oku ? `${oku}億${rest ? rest.toLocaleString() + '万' : ''}円` : `${Math.abs(v).toLocaleString()}万円`);
@@ -56,7 +56,7 @@ function renderHof(items) {
       <label>
         <input type="checkbox" value="${e.id}" data-testid="hof-check">
         <span class="rk">${i + 1}</span>
-        <span class="who">${esc(e.name)}<small>${esc(e.unit)}・${fmtMan(e.lifetime)}・🏆${e.awards}・軍団${e.army}人・享年${e.age}・${fmtDate(e.created_at)}</small></span>
+        <span class="who">${esc(e.name)}<small>${esc(e.unit)}・${fmtMan(e.lifetime)}・🏆${e.awards}・軍団${e.army}人・享年${e.age}・出演${e.tv ?? 0}本・${fmtDate(e.created_at)}</small></span>
         <b>${Number(e.score).toLocaleString()}点</b>
       </label>
     </li>`).join('') : '<p class="admin-empty glass">ランキングはまだ空です。</p>';
