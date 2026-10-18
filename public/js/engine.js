@@ -9,9 +9,15 @@ import {
   START_YEAR, START_AGE, SEASONS, TIERS, RACES, SHOWS, ARMY_POOL,
   PARTNER_NAMES, COMBI_NAMES, TRIO_NAMES, FLAVOR, isGroup, THEATERS,
 } from './data.js';
-import { EVENTS } from './events.js';
+import { EVENTS as EVENTS1 } from './events.js';
+import { EVENTS2 } from './events2.js';
 import { TEMPLATES, fill } from './eventgen.js';
-import { SPECIALS } from './specials.js';
+import { SPECIALS as SPECIALS1 } from './specials.js';
+import { SPECIALS2 } from './specials2.js';
+
+// 手書きイベント（events.js ＋ 追加の events2.js）と特別イベント（specials.js ＋ specials2.js）
+export const EVENTS = [...EVENTS1, ...EVENTS2];
+export const SPECIALS = [...SPECIALS1, ...SPECIALS2];
 import { calcScore } from './score.js';
 
 export const MAX_AGE = 100;
