@@ -32,10 +32,17 @@ export async function runAI(env, user, maxTokens, models = MODELS) {
         temperature: 0.9,
       });
       const text = cleanText(out?.response ?? '');
-      if (text) return text;
+      if (text && !hasStrayEnglish(text)) return text;
+      lastErr = new Error('bad japanese');
     } catch (e) { lastErr = e; }
   }
   throw lastErr || new Error('empty response');
+}
+
+// 「gone」のように英単語が混ざった不自然な文章は使わない（賞レース名などは許可）
+const ALLOWED = /M-1|R-1|THE|SECOND|NSC|ABC|NHK|CM|TV|YouTube|SNS|AI|W/g;
+export function hasStrayEnglish(t) {
+  return /[A-Za-z]{2,}/.test(String(t).replace(ALLOWED, ''));
 }
 
 export function cleanText(t) {
@@ -63,7 +70,9 @@ async function eulogy(req, env) {
   const family = Array.isArray(b.family) ? b.family.slice(0, 5).map((a) => clip(a, 30)).join('、') : '';
   const prompt = `80歳で亡くなった架空のお笑い芸人「${clip(b.name, 20)}」（${clip(b.unit, 20)}／${clip(b.unitType, 10)}）への弔辞を書いてください。
 経歴: 18歳でNSC大阪校入学、最終ランク「${clip(b.tier, 12)}」、生涯年収 約${Math.round(Number(b.lifetime) || 0)}万円、賞レース優勝: ${awards || 'なし'}、家族: ${family}、テレビ・映画出演 ${Number(b.tvCount) || 0}作品${b.army ? `、${clip(b.army, 20)}（${Number(b.armyCount) || 0}人）の団長` : ''}。
-笑いと涙が両方ある関西弁の弔辞を、4〜5文・220文字以内で。最後はボケで締めてください。`;
+笑いと涙が両方ある関西弁の弔辞を、4〜5文・220文字以内で。最後はボケで締めてください。
+すべて関西弁の日本語で書き、英単語は使わないこと。
+書き出しの例: 「〇〇さん、ほんまにお疲れさんでした。18歳でNSCに入ったあの日から、あんたはずっとおもろかったなぁ。」`;
   const text = await runAI(env, prompt, 420, MODELS_LONG);
   return json({ text });
 }
