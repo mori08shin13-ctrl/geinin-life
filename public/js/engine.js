@@ -12,6 +12,7 @@ import {
 import { EVENTS } from './events.js';
 import { TEMPLATES, fill } from './eventgen.js';
 import { SPECIALS } from './specials.js';
+import { calcScore } from './score.js';
 
 export const MAX_AGE = 100;
 export const MAX_Q = (MAX_AGE - START_AGE) * 4; // 18歳春〜100歳春
@@ -512,9 +513,16 @@ export function summary(s) {
     fam.home ? `住まい：${fam.home}` : '住まい：生涯賃貸',
     fam.car ? `愛車：${fam.car}` : null,
   ].filter(Boolean);
+  const tierIndex = Math.max(s.peakTier || 0, tierOf(s));
+  const scoreInput = {
+    lifetime: Math.round(s.lifetime), awards: s.awards.map((a) => a.race), tier: tierIndex, tvCount: s.tv.length,
+    army: s.army.members.length, age: s.deathAge ?? age(s), spouse: !!fam.spouse,
+    children: fam.children, grandchildren: fam.grandchildren, pets: fam.pets.length,
+  };
   return {
     name: s.name,
     gender: s.gender,
+    tierIndex, scoreInput, score: calcScore(scoreInput),
     deathAge: s.deathAge ?? age(s),
     deathYear: year(s),
     unit: unitDisplay(s), unitType: unitLabel(s),

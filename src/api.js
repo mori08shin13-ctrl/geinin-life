@@ -95,18 +95,25 @@ async function eulogy(req, env) {
   return json({ text });
 }
 
-// ---------- 殿堂（Durable Object へ転送） ----------
+import { calcScore } from '../public/js/score.js';
+
+// ---------- 殿堂（Durable Object へ転送）。順位は芸人スコア ----------
 async function hof(req, env) {
   if (!env.HOF) return json({ top: [] });
   const stub = env.HOF.get(env.HOF.idFromName('global'));
   if (req.method === 'POST') {
     const b = await req.json().catch(() => ({}));
+    const awards = Array.isArray(b.awards) ? b.awards.slice(0, 30).map((a) => clip(a, 20)) : [];
+    const lifetime = Math.max(-1e6, Math.min(1e7, Math.round(Number(b.lifetime) || 0)));
+    const { total } = calcScore({ ...b, awards, lifetime });
     const entry = {
       name: clip(b.name, 20) || '名無し',
       unit: clip(b.unit, 20),
-      lifetime: Math.max(-1e6, Math.min(1e7, Math.round(Number(b.lifetime) || 0))),
-      awards: Math.max(0, Math.min(20, Number(b.awards) | 0)),
+      score: total,
+      lifetime,
+      awards: awards.length,
       army: Math.max(0, Math.min(50, Number(b.army) | 0)),
+      age: Math.max(0, Math.min(100, Number(b.age) | 0)),
       gender: b.gender === 'female' ? 'female' : 'male',
     };
     return json({ top: await stub.add(entry) });

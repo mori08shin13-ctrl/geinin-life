@@ -18,21 +18,24 @@ export class HallOfFame extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS hof (
+    // 旧ランキング（生涯年収順）のデータは削除し、芸人スコア順の新しい表を使う
+    this.sql.exec('DROP TABLE IF EXISTS hof');
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS hof_score (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT, unit TEXT, lifetime INTEGER, awards INTEGER, army INTEGER, gender TEXT,
+      name TEXT, unit TEXT, score INTEGER, lifetime INTEGER, awards INTEGER, army INTEGER, age INTEGER, gender TEXT,
       created_at INTEGER
     )`);
   }
   async add(e) {
-    this.sql.exec('INSERT INTO hof (name, unit, lifetime, awards, army, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      e.name, e.unit, e.lifetime, e.awards, e.army, e.gender, Date.now());
+    this.sql.exec('INSERT INTO hof_score (name, unit, score, lifetime, awards, army, age, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      e.name, e.unit, e.score, e.lifetime, e.awards, e.army, e.age, e.gender, Date.now());
     // 上位100件だけ残す
-    this.sql.exec('DELETE FROM hof WHERE id NOT IN (SELECT id FROM hof ORDER BY lifetime DESC LIMIT 100)');
+    this.sql.exec('DELETE FROM hof_score WHERE id NOT IN (SELECT id FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 100)');
     return this.top();
   }
   async top() {
-    return this.sql.exec('SELECT name, unit, lifetime, awards, army FROM hof ORDER BY lifetime DESC LIMIT 10').toArray();
+    // 同点なら生涯年収が多い人、それも同じなら先に登録した人が上
+    return this.sql.exec('SELECT name, unit, score, lifetime, awards, army, age FROM hof_score ORDER BY score DESC, lifetime DESC, id ASC LIMIT 10').toArray();
   }
 }
 

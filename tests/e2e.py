@@ -63,8 +63,12 @@ def mock_api(page, ai_ok=True, comment="AIのツッコミやで！"):
             return route.fulfill(json={"items": items})
         if path == "hof":
             if req.method == "POST":
-                HOF.append(json.loads(req.post_data))
-            top = sorted(HOF, key=lambda e: -e["lifetime"])[:10]
+                d = json.loads(req.post_data)
+                assert "tier" in d and "tvCount" in d and isinstance(d["awards"], list), d
+                d["score"] = d["lifetime"] // 1000 + len(d["awards"]) * 100
+                d["awards"] = len(d["awards"])
+                HOF.append(d)
+            top = sorted(HOF, key=lambda e: (-e["score"], -e["lifetime"]))[:10]
             return route.fulfill(json={"top": top})
         return route.fulfill(status=404, body="{}")
 
@@ -203,6 +207,10 @@ def test_full_life(browser, base, device):
     death = assert_result(page, name)
     expect(page.get_by_test_id("result-eulogy")).to_contain_text("モックの弔辞")
     expect(page.get_by_test_id("hof-list")).to_contain_text(name)
+    expect(page.get_by_test_id("hof-score").first).to_contain_text("点")
+    expect(page.get_by_test_id("result-score")).to_be_visible()
+    total = page.get_by_test_id("score-total").inner_text()
+    assert total.endswith("点") and int(total[:-1].replace(",", "")) > 0, total
     # ご意見・ご要望を送る
     form = page.get_by_test_id("feedback-form")
     expect(form).to_be_visible()

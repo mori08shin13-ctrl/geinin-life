@@ -624,6 +624,11 @@ function resultScreen() {
           <div class="big-money" data-testid="result-lifetime">${E.formatMan(0)}</div>
         </div>
 
+        <div class="r-card glass score-card" style="animation-delay:.03s" data-testid="result-score">
+          <h3><span class="ic">💯</span>芸人スコア <b class="score-total" data-testid="score-total">${r.score.total.toLocaleString()}点</b></h3>
+          <ul class="score-parts">${r.score.parts.map((p) => `<li><span>${p.label}<small>${p.note}</small></span><b>${p.pts.toLocaleString()}点</b></li>`).join('')}</ul>
+        </div>
+
         <div class="r-card glass" style="animation-delay:.05s" data-testid="result-awards">
           <h3><span class="ic">🏆</span>賞レース優勝</h3>
           ${r.awards.length ? `<div class="trophies">${r.awards.map((a) => `<div class="trophy"><span class="y">${a.year}</span><span><b>${esc(a.race)}</b><small>${esc(a.unit)}として優勝</small></span></div>`).join('')}</div>` : '<p class="empty">優勝はなし。でも、ええ芸人人生やった。</p>'}
@@ -666,7 +671,7 @@ function resultScreen() {
         </form>
 
         <div class="r-card glass" style="animation-delay:.3s" data-testid="result-hof">
-          <h3><span class="ic">👑</span>殿堂入りランキング</h3>
+          <h3><span class="ic">👑</span>殿堂入りランキング（芸人スコア）</h3>
           <div data-slot="hof"><div class="sk sk-row"></div></div>
         </div>
 
@@ -732,7 +737,7 @@ async function shareImage(r) {
   btn.disabled = false; btn.textContent = '結果画面の画像をシェア';
   if (!blob) { toast('画像を作れへんかった。もう一回押してみて'); return; }
   const file = new File([blob], `geinin-life-${Date.now()}.png`, { type: 'image/png' });
-  const text = `【芸人人生】${r.name}（${r.unit}）享年${r.deathAge}。生涯年収${E.formatMan(r.lifetime)}！`;
+  const text = `【芸人人生】${r.name}（${r.unit}）享年${r.deathAge}。芸人スコア${r.score.total.toLocaleString()}点・生涯年収${E.formatMan(r.lifetime)}！`;
   try {
     if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text, title: '芸人人生' }); return; }
   } catch (e) { if (e?.name === 'AbortError') return; }
@@ -761,7 +766,7 @@ async function submitHof(root, r) {
   let list = null;
   try {
     if (!S.flags.hofSent) {
-      const res = await api('/api/hof', { name: r.name, unit: r.unit, lifetime: r.lifetime, awards: r.awards.length, army: r.army.members.length, gender: r.gender });
+      const res = await api('/api/hof', { name: r.name, unit: r.unit, gender: r.gender, ...r.scoreInput });
       S.flags.hofSent = true; save();
       list = res.top;
     } else list = (await api('/api/hof')).top;
@@ -772,7 +777,7 @@ function hofListHTML(list, me) {
   if (!list) return '<p class="empty">ランキングはCloudflareで公開した版でだけ使えるで。</p>';
   if (!list.length) return '<p class="empty">まだ誰も殿堂入りしてへん。一番乗りや！</p>';
   return `<ol class="hof-list" data-testid="hof-list">${list.map((e, i) => `<li${e.name === me ? ' style="box-shadow:0 0 0 2px var(--spot)"' : ''}>
-    <span class="rk">${i + 1}</span><span>${esc(e.name)}<small>${esc(e.unit)}・🏆${e.awards}・軍団${e.army}人</small></span><span class="mny">${E.formatMan(e.lifetime)}</span></li>`).join('')}</ol>`;
+    <span class="rk">${i + 1}</span><span>${esc(e.name)}<small>${esc(e.unit)}・${E.formatMan(e.lifetime)}・🏆${e.awards}・軍団${e.army}人・享年${e.age}</small></span><span class="mny" data-testid="hof-score">${Number(e.score).toLocaleString()}点</span></li>`).join('')}</ol>`;
 }
 
 // =================================================================
@@ -784,7 +789,7 @@ function hofScreen() {
     prepare: async () => { try { list = (await api('/api/hof')).top; } catch {} },
     html: () => `
       <div class="r-card glass" data-testid="hof-screen">
-        <h3><span class="ic">👑</span>殿堂入りランキング（生涯年収）</h3>
+        <h3><span class="ic">👑</span>殿堂入りランキング（芸人スコア）</h3>
         ${hofListHTML(list, '')}
       </div>
       <button class="btn glass" data-testid="btn-back">もどる</button>`,

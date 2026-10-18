@@ -21,9 +21,15 @@ assert.deepEqual(calls, ['@cf/google/gemma-3-12b-it', '@cf/meta/llama-3.3-70b-in
 r = await handleApi(post('/api/eulogy', { name: 'a', awards: ['M-1 優勝'], family: ['妻あり'] }), env);
 assert.equal(r.status, 200); assert.ok((await r.json()).text);
 
-r = await handleApi(post('/api/hof', { name: '<script>'.repeat(10), lifetime: 1e12, awards: 99 }), env);
+r = await handleApi(post('/api/hof', { name: '<script>'.repeat(10), lifetime: 1e12, awards: Array(99).fill('M-1グランプリ'), tier: 99, tvCount: 999, army: 999, age: 300 }), env);
 const top = (await r.json()).top;
-assert.equal(top[0].name.length, 20); assert.equal(top[0].lifetime, 1e7); assert.equal(top[0].awards, 20);
+assert.equal(top[0].name.length, 20); assert.equal(top[0].lifetime, 1e7); assert.equal(top[0].awards, 30);
+// 芸人スコアはサーバー側で計算し直す（上限つき）
+assert.equal(top[0].score, 10000 + 30 * 150 + 6 * 30 + 60 * 3 + 50 * 5 + 45 * 2);
+import { calcScore } from '../public/js/score.js';
+const sc = calcScore({ lifetime: 52000, awards: ['M-1グランプリ', '上方漫才大賞'], tier: 6, tvCount: 24, army: 6, age: 84, spouse: true, children: 2, grandchildren: 1, pets: 1 });
+assert.equal(sc.total, 52 + 210 + 180 + 72 + 30 + 58 + 50);
+assert.equal(sc.parts.length, 7);
 
 r = await handleApi(post('/api/comment', {}), { });
 assert.equal(r.status, 503, 'AIがない環境では503（フロントが代替文言を使う）');

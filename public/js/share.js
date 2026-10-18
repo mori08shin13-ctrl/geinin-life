@@ -85,7 +85,7 @@ export async function drawResultImage(r, host = '') {
 
   // ヒーロー
   let y = 150;
-  glass(ctx, X, y, CW, 470);
+  glass(ctx, X, y, CW, 520);
   ctx.textAlign = 'center';
   ctx.fillStyle = SUB; ctx.font = `700 32px ${BODY}`;
   ctx.fillText(`${r.deathYear}年　享年${r.deathAge}`, W / 2, y + 70);
@@ -100,8 +100,10 @@ export async function drawResultImage(r, host = '') {
   const money = formatMan(r.lifetime);
   while (ctx.measureText(money).width > CW - 80 && fs > 50) { fs -= 4; ctx.font = `400 ${fs}px ${DISPLAY}`; }
   ctx.fillText(money, W / 2, y + 420);
+  ctx.fillStyle = RED; ctx.font = `400 40px ${DISPLAY}`;
+  ctx.fillText(`芸人スコア ${r.score.total.toLocaleString()}点`, W / 2, y + 486);
   ctx.textAlign = 'left';
-  y += 500;
+  y += 550;
 
   const card = (title, height, draw) => {
     glass(ctx, X, y, CW, height, 36);
